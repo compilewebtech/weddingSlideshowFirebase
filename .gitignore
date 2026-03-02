@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+dist
+
+# Environment
+.env
+.env.local
+.env.production
+client/.env
+client/.env.local
+client/.env.production
+client/dist
+client/node_modules
+server/.env
+server/dist
+server/node_modules
+*.log
+.firebase
+firebase-debug.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/

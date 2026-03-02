@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /guests/{guestId} {
+      // Anyone can create (RSVP form)
+      allow create: if request.resource.data.keys().hasAll(['name', 'attending'])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 100;
+      
+      // Only callable from backend functions (admin)
+      allow read, delete: if false;
+    }
+  }
+}
