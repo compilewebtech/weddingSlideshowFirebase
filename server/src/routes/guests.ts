@@ -19,6 +19,8 @@ router.get('/', async (_req: Request, res: Response) => {
 // POST new guest
 router.post('/', validateGuest, async (req: Request, res: Response) => {
   try {
+    console.log('📩 Incoming RSVP:', req.body); // Log incoming data
+
     const guestData = {
       name: req.body.name,
       email: req.body.email || undefined,
@@ -34,7 +36,14 @@ router.post('/', validateGuest, async (req: Request, res: Response) => {
 
     // Send confirmation email (non-blocking)
     if (savedGuest.email) {
-      sendConfirmationEmail({ ...savedGuest, email: savedGuest.email }).catch((err) => {
+      console.log('📧 Attempting to send email to:', savedGuest.email);
+      sendConfirmationEmail({
+        name: savedGuest.name,
+        email: savedGuest.email,
+        attending: savedGuest.attending,
+        numberOfGuests: savedGuest.numberOfGuests,
+        message: savedGuest.message,
+      }).catch((err) => {
         console.error('⚠️ Email failed (non-blocking):', err.message);
       });
     }
