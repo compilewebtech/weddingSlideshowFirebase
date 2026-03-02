@@ -35,13 +35,27 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
   const html = `
     <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <h2 style="color: #8B7355; border-bottom: 2px solid #D4AF37; padding-bottom: 10px;">
-        Wedding RSVP ${guest.attending ? '✅' : '❌'}
+        Wedding RSVP ${
+          guest.attending === 'yes' ? '✅' :
+          guest.attending === 'no' ? '❌' :
+          '🤔'
+        }
       </h2>
       <table style="width: 100%; border-collapse: collapse;">
         <tr><td style="padding: 8px; font-weight: bold;">Name:</td><td style="padding: 8px;">${guest.name}</td></tr>
         <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">${guest.email}</td></tr>
-        <tr><td style="padding: 8px; font-weight: bold;">Attending:</td><td style="padding: 8px;">${guest.attending ? 'Yes' : 'No'}</td></tr>
-        ${guest.attending ? `<tr><td style="padding: 8px; font-weight: bold;">Guests:</td><td style="padding: 8px;">${guest.numberOfGuests || 1}</td></tr>` : ''}
+        <tr><td style="padding: 8px; font-weight: bold;">Attending:</td><td style="padding: 8px;">
+          ${
+            guest.attending === 'yes' ? 'Yes' :
+            guest.attending === 'no' ? 'No' :
+            'Maybe'
+          }
+        </td></tr>
+        ${
+          guest.attending === 'yes'
+            ? `<tr><td style="padding: 8px; font-weight: bold;">Guests:</td><td style="padding: 8px;">${guest.numberOfGuests || 1}</td></tr>`
+            : ''
+        }
         ${guest.message ? `<tr><td style="padding: 8px; font-weight: bold;">Message:</td><td style="padding: 8px;">${guest.message}</td></tr>` : ''}
       </table>
       <p style="color: #888; font-size: 12px; margin-top: 20px;">Submitted: ${new Date().toLocaleString()}</p>
@@ -67,9 +81,12 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
       <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #8B7355;">Thank you, ${guest.name}! 💐</h2>
         <p>Your RSVP has been received.</p>
-        <p>${guest.attending
-          ? `We're delighted you'll be joining us! We've noted ${guest.numberOfGuests || 1} guest(s).`
-          : `We're sorry you can't make it. You'll be missed!`
+        <p>${
+          guest.attending === 'yes'
+            ? `We're delighted you'll be joining us! We've noted ${guest.numberOfGuests || 1} guest(s).`
+            : guest.attending === 'no'
+            ? `We're sorry you can't make it. You'll be missed!`
+            : `Thank you for letting us know. If you decide later, just RSVP again!`
         }</p>
         <p style="color: #D4AF37; font-style: italic;">With love and gratitude ❤️</p>
       </div>
