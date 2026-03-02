@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 interface GuestEmail {
   name: string;
   email: string;
-  attending: boolean;
+  attending: 'yes' | 'no' | 'maybe';
   numberOfGuests?: number;
   message?: string;
 }
@@ -25,9 +25,12 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
     return;
   }
 
-  const subject = guest.attending
-    ? `🎉 RSVP Confirmed: ${guest.name} is attending!`
-    : `📋 RSVP Received: ${guest.name} cannot attend`;
+  const subject =
+    guest.attending === 'yes'
+      ? `🎉 RSVP Confirmed: ${guest.name} is attending!`
+      : guest.attending === 'no'
+      ? `📬 RSVP Received: ${guest.name} cannot attend`
+      : `🤔 RSVP Maybe: ${guest.name} is undecided`;
 
   const html = `
     <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 20px;">
