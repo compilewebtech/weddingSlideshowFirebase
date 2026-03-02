@@ -11,7 +11,7 @@ import { Footer } from './components/Footer';
 import { useAudio } from './hooks/useAudio';
 
 // Romantic violin music (royalty-free)
-const MUSIC_URL = '/public/A Sky Full of Stars Coldplay violin cover.mp3';
+const MUSIC_URL = '/A Sky Full of Stars Coldplay violin cover.mp3';
 
 function App() {
   const [hasEntered, setHasEntered] = useState(false);
