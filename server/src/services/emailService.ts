@@ -48,12 +48,19 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
     </div>
   `;
 
-  await transporter.sendMail({
-    from: `"Wedding RSVP" <${EMAIL_USER}>`,
-    to: EMAIL_USER,
-    subject,
-    html,
-  });
+  console.log('Preparing to send email:', guest);
+
+  try {
+    await transporter.sendMail({
+      from: `"Wedding RSVP" <${EMAIL_USER}>`,
+      to: EMAIL_USER,
+      subject,
+      html,
+    });
+    console.log('Confirmation email sent to:', EMAIL_USER);
+  } catch (err) {
+    console.error('Error sending confirmation email:', err);
+  }
 
   if (guest.email) {
     const guestHtml = `
@@ -68,12 +75,17 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
       </div>
     `;
 
-    await transporter.sendMail({
-      from: `"Wedding Invitation" <${EMAIL_USER}>`,
-      to: guest.email,
-      subject: `Thank you for your RSVP, ${guest.name}!`,
-      html: guestHtml,
-    });
+    try {
+      await transporter.sendMail({
+        from: `"Wedding Invitation" <${EMAIL_USER}>`,
+        to: guest.email,
+        subject: `Thank you for your RSVP, ${guest.name}!`,
+        html: guestHtml,
+      });
+      console.log('Guest email sent to:', guest.email);
+    } catch (err) {
+      console.error('Error sending guest email:', err);
+    }
   }
 
   console.log(`📧 Emails sent for ${guest.name}`);
