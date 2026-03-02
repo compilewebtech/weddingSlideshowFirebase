@@ -31,6 +31,8 @@ router.post('/', validateGuest, async (req: Request, res: Response) => {
       submittedAt: new Date().toISOString(),
     };
 
+    console.log('Passed validation, saving guest:', guestData);
+
     const savedGuest = await GuestModel.create(guestData);
     console.log('✅ Guest saved:', savedGuest.name);
 
