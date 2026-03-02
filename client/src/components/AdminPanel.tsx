@@ -4,14 +4,12 @@ import { FileSpreadsheet, Users, CheckCircle, XCircle, HelpCircle, Eye, EyeOff, 
 import { useGuests } from '../hooks/useGuests';
 
 export const AdminPanel = () => {
-  const { guests, exportToExcel, getStats } = useGuests();
+  const { guests, exportToExcel, stats } = useGuests();
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
-  const stats = getStats();
-
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // Simple password protection (in production, use proper authentication)
@@ -101,7 +99,7 @@ export const AdminPanel = () => {
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     <div className="bg-cream p-4 rounded-lg text-center">
                       <Users className="w-8 h-8 mx-auto text-gold mb-2" />
-                      <p className="font-cormorant text-3xl text-charcoal">{stats.total}</p>
+                      <p className="font-cormorant text-3xl text-charcoal">{stats.totalGuests}</p>
                       <p className="font-montserrat text-xs text-charcoal/60 uppercase tracking-wider">
                         Total RSVPs
                       </p>
@@ -122,7 +120,7 @@ export const AdminPanel = () => {
                     </div>
                     <div className="bg-yellow-50 p-4 rounded-lg text-center">
                       <HelpCircle className="w-8 h-8 mx-auto text-yellow-600 mb-2" />
-                      <p className="font-cormorant text-3xl text-charcoal">{stats.maybe}</p>
+                      <p className="font-cormorant text-3xl text-charcoal">{stats.pending}</p>
                       <p className="font-montserrat text-xs text-charcoal/60 uppercase tracking-wider">
                         Maybe
                       </p>
@@ -195,14 +193,18 @@ export const AdminPanel = () => {
                                 <td className="px-4 py-3 text-center">
                                   <span
                                     className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-montserrat uppercase tracking-wider ${
-                                      guest.attending === 'yes'
+                                      guest.attending === true
                                         ? 'bg-green-100 text-green-700'
-                                        : guest.attending === 'no'
+                                        : guest.attending === false
                                         ? 'bg-red-100 text-red-700'
                                         : 'bg-yellow-100 text-yellow-700'
                                     }`}
                                   >
-                                    {guest.attending}
+                                    {guest.attending === true
+                                      ? 'Yes'
+                                      : guest.attending === false
+                                      ? 'No'
+                                      : 'Maybe'}
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-center font-cormorant text-lg">

@@ -1,11 +1,11 @@
 export interface Guest {
   id: string;
   name: string;
-  email: string;
-  attending: 'yes' | 'no' | 'maybe';
+  email?: string;
+  phone?: string;
+  attending: boolean;
   numberOfGuests: number;
-  dietaryRestrictions: string;
-  message: string;
+  message?: string;
   submittedAt: string;
 }
 
