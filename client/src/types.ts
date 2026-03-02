@@ -3,7 +3,7 @@ export interface Guest {
   name: string;
   email?: string;
   phone?: string;
-  attending: boolean;
+  attending: 'yes' | 'no' | 'maybe'; // <-- string union, not boolean
   numberOfGuests: number;
   message?: string;
   submittedAt: string;

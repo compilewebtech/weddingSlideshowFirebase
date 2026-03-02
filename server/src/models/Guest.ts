@@ -13,7 +13,7 @@ export interface GuestDoc {
   name: string;
   email?: string;
   phone?: string;
-  attending: boolean;
+  attending: 'yes' | 'no' | 'maybe';
   numberOfGuests: number;
   message?: string;
   submittedAt: string;
