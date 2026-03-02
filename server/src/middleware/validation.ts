@@ -13,7 +13,7 @@ export function validateGuest(req: Request, res: Response, next: NextFunction) {
     return res.status(400).json({ error: 'Name must be under 100 characters' });
   }
 
-  if (typeof attending !== 'boolean') {
+  if (typeof attending !== 'boolean' && !['yes', 'no', 'maybe'].includes(attending)) {
     return res.status(400).json({ error: 'Attending status is required' });
   }
 
