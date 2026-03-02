@@ -21,15 +21,17 @@ router.post('/', validateGuest, async (req: Request, res: Response) => {
   try {
     console.log('📩 Incoming RSVP:', req.body); // Log incoming data
 
-    const guestData = {
+    const guestData: any = {
       name: req.body.name,
-      email: req.body.email || undefined,
-      phone: req.body.phone || undefined,
+      email: req.body.email,
       attending: req.body.attending,
       numberOfGuests: req.body.numberOfGuests || 1,
-      message: req.body.message || undefined,
       submittedAt: new Date().toISOString(),
     };
+
+    if (req.body.phone) guestData.phone = req.body.phone;
+    if (req.body.message) guestData.message = req.body.message;
+    if (req.body.dietaryRestrictions) guestData.dietaryRestrictions = req.body.dietaryRestrictions;
 
     console.log('Passed validation, saving guest:', guestData);
 
