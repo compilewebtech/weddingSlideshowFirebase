@@ -10,6 +10,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
+  'https://weddingslideshowf.netlify.app', // <-- add this line
   process.env.CLIENT_URL,
 ].filter(Boolean) as string[];
 
