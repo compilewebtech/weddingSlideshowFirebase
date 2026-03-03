@@ -13,7 +13,7 @@ export const AdminPanel = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // Simple password protection (in production, use proper authentication)
-    if (password === 'wedding2024') {
+    if (password === 'wedding2026') {
       setIsAuthenticated(true);
     } else {
       alert('Incorrect password');
@@ -88,7 +88,6 @@ export const AdminPanel = () => {
                       Access Dashboard
                     </button>
                     <p className="text-center text-charcoal/50 text-xs mt-4 font-montserrat">
-                      Demo password: wedding2024
                     </p>
                   </form>
                 </div>
