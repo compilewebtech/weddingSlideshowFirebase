@@ -36,19 +36,28 @@ export const AdminPanel = () => {
       {/* Admin panel modal */}
       <AnimatePresence>
         {isOpen && (
-          <>
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
             />
+
+            {/* Modal Content */}
             <motion.div
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] overflow-auto bg-white shadow-2xl z-50 rounded-lg"
-              initial={{ opacity: 0, scale: 0.9, y: '-40%', x: '-50%' }}
-              animate={{ opacity: 1, scale: 1, y: '-50%', x: '-50%' }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-auto bg-white shadow-2xl rounded-lg z-10"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
             >
               {!isAuthenticated ? (
                 <div className="p-8">
@@ -223,7 +232,7 @@ export const AdminPanel = () => {
                 </div>
               )}
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
     </>
