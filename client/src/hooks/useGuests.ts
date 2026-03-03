@@ -108,7 +108,12 @@ export function useGuests(): UseGuestsResult {
       'Name': guest.name,
       'Email': guest.email || 'N/A',
       'Phone': guest.phone || 'N/A',
-      'Attending': guest.attending ? 'Yes' : 'No',
+      'Attending':
+        guest.attending === 'yes'
+          ? 'Yes'
+          : guest.attending === 'no'
+          ? 'No'
+          : 'Maybe',
       'Number of Guests': guest.numberOfGuests || 1,
       'Message': guest.message || '',
       'Submitted At': guest.submittedAt
@@ -130,13 +135,14 @@ export function useGuests(): UseGuestsResult {
     XLSX.writeFile(wb, `wedding-guests-${new Date().toISOString().split('T')[0]}.xlsx`);
   }, [guests]);
 
+  // Stats
   const stats: GuestStats = {
     totalGuests: guests.length,
-    attending: guests.filter(g => g.attending).length,
-    notAttending: guests.filter(g => !g.attending).length,
-    pending: 0,
+    attending: guests.filter(g => g.attending === 'yes').length,
+    notAttending: guests.filter(g => g.attending === 'no').length,
+    pending: guests.filter(g => g.attending === 'maybe').length,
     totalPeople: guests
-      .filter(g => g.attending)
+      .filter(g => g.attending === 'yes')
       .reduce((sum, g) => sum + (g.numberOfGuests || 1), 0),
   };
 
