@@ -135,9 +135,9 @@ export const AdminPanel = () => {
                     </div>
                     <div className="bg-gold/10 p-4 rounded-lg text-center">
                       <Users className="w-8 h-8 mx-auto text-gold mb-2" />
-                      <p className="font-cormorant text-3xl text-charcoal">{stats.totalGuests}</p>
+                      <p className="font-cormorant text-3xl text-charcoal">{stats.totalGuestsAttending}</p>
                       <p className="font-montserrat text-xs text-charcoal/60 uppercase tracking-wider">
-                        Total Guests
+                        Total Guests Attending
                       </p>
                     </div>
                   </div>

@@ -11,6 +11,7 @@ interface GuestStats {
   notAttending: number;
   pending: number;
   totalPeople: number;
+  totalGuestsAttending: number;
 }
 
 interface UseGuestsResult {
@@ -142,6 +143,9 @@ export function useGuests(): UseGuestsResult {
     notAttending: guests.filter(g => g.attending === 'no').length,
     pending: guests.filter(g => g.attending === 'maybe').length,
     totalPeople: guests
+      .filter(g => g.attending === 'yes')
+      .reduce((sum, g) => sum + (g.numberOfGuests || 1), 0),
+    totalGuestsAttending: guests
       .filter(g => g.attending === 'yes')
       .reduce((sum, g) => sum + (g.numberOfGuests || 1), 0),
   };
