@@ -19,7 +19,6 @@ router.get('/', async (_req: Request, res: Response) => {
 // POST new guest
 router.post('/', validateGuest, async (req: Request, res: Response) => {
   try {
-    console.log('📩 Incoming RSVP:', req.body); // Log incoming data
 
     const guestData: any = {
       name: req.body.name,
@@ -33,14 +32,10 @@ router.post('/', validateGuest, async (req: Request, res: Response) => {
     if (req.body.message) guestData.message = req.body.message;
     if (req.body.dietaryRestrictions) guestData.dietaryRestrictions = req.body.dietaryRestrictions;
 
-    console.log('Passed validation, saving guest:', guestData);
-
     const savedGuest = await GuestModel.create(guestData);
-    console.log('✅ Guest saved:', savedGuest.name);
 
     // Send confirmation email (non-blocking)
     if (savedGuest.email) {
-      console.log('📧 Attempting to send email to:', savedGuest.email);
       sendConfirmationEmail({
         name: savedGuest.name,
         email: savedGuest.email,

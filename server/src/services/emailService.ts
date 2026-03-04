@@ -62,8 +62,6 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
     </div>
   `;
 
-  console.log('Preparing to send email:', guest);
-
   try {
     await transporter.sendMail({
       from: `"Wedding RSVP" <${EMAIL_USER}>`,
@@ -71,7 +69,6 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
       subject,
       html,
     });
-    console.log('Confirmation email sent to:', EMAIL_USER);
   } catch (err) {
     console.error('Error sending confirmation email:', err);
   }
@@ -99,11 +96,10 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
         subject: `Thank you for your RSVP, ${guest.name}!`,
         html: guestHtml,
       });
-      console.log('Guest email sent to:', guest.email);
+      
     } catch (err) {
       console.error('Error sending guest email:', err);
     }
   }
 
-  console.log(`📧 Emails sent for ${guest.name}`);
 }

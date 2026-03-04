@@ -3,8 +3,6 @@ import { Request, Response, NextFunction } from 'express';
 export function validateGuest(req: Request, res: Response, next: NextFunction) {
   const { name, attending } = req.body;
 
-  console.log('Validating RSVP:', req.body);
-
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
     return res.status(400).json({ error: 'Name is required' });
   }
