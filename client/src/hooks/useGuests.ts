@@ -103,39 +103,6 @@ export function useGuests(): UseGuestsResult {
     }
   }, []);
 
-  const exportToExcel = useCallback(() => {
-    const exportData = guests.map((guest, index) => ({
-      '#': index + 1,
-      'Name': guest.name,
-      'Email': guest.email || 'N/A',
-      'Phone': guest.phone || 'N/A',
-      'Attending':
-        guest.attending === 'yes'
-          ? 'Yes'
-          : guest.attending === 'no'
-          ? 'No'
-          : 'Maybe',
-      'Number of Guests': guest.numberOfGuests || 1,
-      'Message': guest.message || '',
-      'Submitted At': guest.submittedAt
-        ? new Date(guest.submittedAt).toLocaleString()
-        : 'N/A',
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const colWidths = Object.keys(exportData[0] || {}).map(key => ({
-      wch: Math.max(
-        key.length,
-        ...exportData.map(row => String((row as Record<string, unknown>)[key] || '').length)
-      ) + 2,
-    }));
-    ws['!cols'] = colWidths;
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Guests');
-    XLSX.writeFile(wb, `wedding-guests-${new Date().toISOString().split('T')[0]}.xlsx`);
-  }, [guests]);
-
   // Stats
   const stats: GuestStats = {
     totalGuests: guests.length,
@@ -149,6 +116,58 @@ export function useGuests(): UseGuestsResult {
       .filter(g => g.attending === 'yes')
       .reduce((sum, g) => sum + (g.numberOfGuests || 1), 0),
   };
+
+  const exportToExcel = useCallback(() => {
+    // Guest data rows
+    const guestRows = guests.map((guest, index) => ({
+      '#': index + 1,
+      Name: guest.name,
+      Email: guest.email || 'N/A',
+      Phone: guest.phone || 'N/A',
+      Attending:
+        guest.attending === 'yes'
+          ? 'Yes'
+          : guest.attending === 'no'
+          ? 'No'
+          : 'Maybe',
+      'Number of Guests': guest.numberOfGuests || 1,
+      Message: guest.message || '',
+      'Submitted At': guest.submittedAt
+        ? new Date(guest.submittedAt).toLocaleString()
+        : 'N/A',
+    }));
+
+    // Stats rows (with empty columns for alignment)
+    const statsRows = [
+      { '#': '', Name: '', Email: '', Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Total RSVPs', Email: stats.totalGuests, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Attending', Email: stats.attending, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Not Attending', Email: stats.notAttending, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Maybe', Email: stats.pending, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Total Guests Attending', Email: stats.totalGuestsAttending, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
+    ];
+
+    // Combine guest data and stats
+    const exportData = [
+      ...guestRows,
+      ...statsRows,
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Set column widths
+    const colWidths = Object.keys(exportData[0] || {}).map(key => ({
+      wch: Math.max(
+        key.length,
+        ...exportData.map(row => String((row as Record<string, unknown>)[key] || '').length)
+      ) + 2,
+    }));
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Guests');
+    XLSX.writeFile(wb, `wedding-guests-${new Date().toISOString().split('T')[0]}.xlsx`);
+  }, [guests, stats]);
 
   return { guests, loading, error, addGuest, deleteGuest, exportToExcel, stats };
 }
