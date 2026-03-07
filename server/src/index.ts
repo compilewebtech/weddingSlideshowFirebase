@@ -7,11 +7,14 @@ import { errorHandler } from './middleware/errorHandler';
 const app = express();
 
 // CORS
+const envOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+  : [];
+
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
-  'https://weddingslideshowf.netlify.app', // <-- add this line
-  process.env.CLIENT_URL,
+  ...envOrigins,
 ].filter(Boolean) as string[];
 
 app.use(cors({
