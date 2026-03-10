@@ -1,48 +1,4 @@
-export interface Guest {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  attending: 'yes' | 'no' | 'maybe';
-  numberOfGuests: number;
-  dietaryRestrictions?: string;
-  message?: string;
-  submittedAt: string;
-}
-
-export interface SlideImage {
-  url: string;
-  caption: string;
-}
-
-export interface Wedding {
-  id: string;
-  name: string;
-  createdBy: string;
-  createdAt: string;
-
-  coupleNames: string;
-  inviteText: string;
-  weddingDate: string;
-  welcomeSubtext?: string;
-
-  dateFull: string;
-  ceremonyTime: string;
-  ceremonyLocation?: string;
-  venueName: string;
-  venueAddress: string;
-  quoteText?: string;
-  quoteAuthor?: string;
-
-  rsvpDeadline?: string;
-
-  slides: SlideImage[];
-
-  musicUrl?: string;
-
-  footerQuote?: string;
-  footerQuoteAuthor?: string;
-}
+import type { Wedding } from '../types';
 
 export const DEFAULT_WEDDING: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> = {
   name: '',
@@ -69,4 +25,5 @@ export const DEFAULT_WEDDING: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> = 
   musicUrl: '/A Sky Full of Stars Coldplay violin cover.mp3',
   footerQuote: "I have found the one whom my soul loves.",
   footerQuoteAuthor: 'Song of Solomon 3:4',
+  passwordHash: undefined,
 };

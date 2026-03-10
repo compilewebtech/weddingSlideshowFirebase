@@ -1,12 +1,6 @@
-import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-if (!getApps().length) {
-  initializeApp();
-}
-
 const db = getFirestore();
-const guestsCollection = db.collection('guests');
 
 export interface GuestDoc {
   id: string;
@@ -16,21 +10,28 @@ export interface GuestDoc {
   attending: 'yes' | 'no' | 'maybe';
   numberOfGuests: number;
   message?: string;
+  dietaryRestrictions?: string;
   submittedAt: string;
   createdAt: Timestamp;
 }
 
+function getGuestsCollection(weddingId: string) {
+  return db.collection('weddings').doc(weddingId).collection('guests');
+}
+
 export const GuestModel = {
-  async findAll(): Promise<GuestDoc[]> {
-    const snapshot = await guestsCollection.orderBy('createdAt', 'desc').get();
-    return snapshot.docs.map(doc => ({
+  async findAll(weddingId: string): Promise<GuestDoc[]> {
+    const snapshot = await getGuestsCollection(weddingId)
+      .orderBy('createdAt', 'desc')
+      .get();
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as GuestDoc[];
   },
 
-  async create(data: Omit<GuestDoc, 'id' | 'createdAt'>): Promise<GuestDoc> {
-    const docRef = await guestsCollection.add({
+  async create(weddingId: string, data: Omit<GuestDoc, 'id' | 'createdAt'>): Promise<GuestDoc> {
+    const docRef = await getGuestsCollection(weddingId).add({
       ...data,
       createdAt: FieldValue.serverTimestamp(),
     });
@@ -41,16 +42,16 @@ export const GuestModel = {
     } as GuestDoc;
   },
 
-  async deleteById(id: string): Promise<boolean> {
-    const docRef = guestsCollection.doc(id);
+  async deleteById(weddingId: string, id: string): Promise<boolean> {
+    const docRef = getGuestsCollection(weddingId).doc(id);
     const doc = await docRef.get();
     if (!doc.exists) return false;
     await docRef.delete();
     return true;
   },
 
-  async findById(id: string): Promise<GuestDoc | null> {
-    const doc = await guestsCollection.doc(id).get();
+  async findById(weddingId: string, id: string): Promise<GuestDoc | null> {
+    const doc = await getGuestsCollection(weddingId).doc(id).get();
     if (!doc.exists) return null;
     return { id: doc.id, ...doc.data() } as GuestDoc;
   },

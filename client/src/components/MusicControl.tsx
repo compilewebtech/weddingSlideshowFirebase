@@ -25,8 +25,7 @@ export const MusicControl = ({ isPlaying, onToggle }: MusicControlProps) => {
       ) : (
         <Music size={22} className="opacity-50" />
       )}
-      
-      {/* Sound wave animation when playing */}
+
       {isPlaying && (
         <div className="absolute -right-1 -top-1">
           <motion.div

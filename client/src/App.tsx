@@ -1,51 +1,30 @@
-import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { WelcomeScreen } from './components/WelcomeScreen';
-import { Slideshow } from './components/Slideshow';
-import { WeddingDetails } from './components/WeddingDetails';
-//import { OurStory } from './components/OurStory';
-import { RSVPForm } from './components/RSVPForm';
-import { AdminPanel } from './components/AdminPanel';
-import { MusicControl } from './components/MusicControl';
-import { Footer } from './components/Footer';
-import { useAudio } from './hooks/useAudio';
-
-// Romantic violin music (royalty-free)
-const MUSIC_URL = '/A Sky Full of Stars Coldplay violin cover.mp3';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { LandingPage } from './pages/LandingPage';
+import { WeddingPage } from './pages/WeddingPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { AdminLoginPage } from './pages/AdminLoginPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { CreateWeddingPage } from './pages/CreateWeddingPage';
+import { EditWeddingPage } from './pages/EditWeddingPage';
+import { WeddingGuestsPage } from './pages/WeddingGuestsPage';
 
 function App() {
-  const [hasEntered, setHasEntered] = useState(false);
-  const { isPlaying, toggle, play } = useAudio(MUSIC_URL);
-
-  const handleEnter = () => {
-    play();
-    setHasEntered(true);
-  };
-
   return (
-    <div className="min-h-screen bg-cream">
-      <AnimatePresence>
-        {!hasEntered && (
-          <WelcomeScreen onEnter={handleEnter} />
-        )}
-      </AnimatePresence>
-
-      {hasEntered && (
-        <>
-          <MusicControl isPlaying={isPlaying} onToggle={toggle} />
-          
-          <main>
-            <Slideshow />
-            <WeddingDetails />
-            {/*<OurStory />*/}
-            <RSVPForm />
-          </main>
-          
-          <Footer />
-          <AdminPanel />
-        </>
-      )}
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/wedding/:id" element={<WeddingPage />} />
+          <Route path="/admin" element={<AdminDashboardPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin/create" element={<CreateWeddingPage />} />
+          <Route path="/admin/wedding/:id" element={<EditWeddingPage />} />
+          <Route path="/admin/wedding/:id/guests" element={<WeddingGuestsPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

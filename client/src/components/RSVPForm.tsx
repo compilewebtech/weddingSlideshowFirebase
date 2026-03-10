@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Heart, Check, Mail } from 'lucide-react';
 import { useGuests } from '../hooks/useGuests';
+import { useWeddingContext } from '../contexts/WeddingContext';
 
 export const RSVPForm = () => {
-  const { addGuest } = useGuests();
+  const wedding = useWeddingContext();
+  const { addGuest } = useGuests(wedding?.id ?? null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showEmailNotification, setShowEmailNotification] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,7 +41,6 @@ export const RSVPForm = () => {
 
   return (
     <section id="rsvp" className="py-24 px-4 bg-blush/30 relative overflow-hidden">
-      {/* Email notification toast */}
       <AnimatePresence>
         {showEmailNotification && (
           <motion.div
@@ -77,9 +78,11 @@ export const RSVPForm = () => {
           <h2 className="font-script text-5xl md:text-7xl text-charcoal mt-4 mb-6">
             RSVP
           </h2>
-          <p className="font-cormorant text-xl text-charcoal/70">
-            Please respond by November 21st, 2026
-          </p>
+          {wedding?.rsvpDeadline && (
+            <p className="font-cormorant text-xl text-charcoal/70">
+              Please respond by {wedding.rsvpDeadline}
+            </p>
+          )}
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -95,7 +98,6 @@ export const RSVPForm = () => {
               transition={{ duration: 0.8 }}
             >
               <div className="grid gap-6">
-                {/* Name */}
                 <div>
                   <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
                     Your Name *
@@ -111,7 +113,6 @@ export const RSVPForm = () => {
                   />
                 </div>
 
-                {/* Email */}
                 <div>
                   <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
                     Email Address *
@@ -127,7 +128,6 @@ export const RSVPForm = () => {
                   />
                 </div>
 
-                {/* Attending */}
                 <div>
                   <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
                     Will you be attending? *
@@ -159,7 +159,6 @@ export const RSVPForm = () => {
                   </div>
                 </div>
 
-                {/* Number of guests */}
                 {formData.attending !== 'no' && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
@@ -184,7 +183,6 @@ export const RSVPForm = () => {
                   </motion.div>
                 )}
 
-                {/* Dietary restrictions */}
                 <div>
                   <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
                     Dietary Restrictions
@@ -199,7 +197,6 @@ export const RSVPForm = () => {
                   />
                 </div>
 
-                {/* Message */}
                 <div>
                   <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
                     Message for the Couple
@@ -214,7 +211,6 @@ export const RSVPForm = () => {
                   />
                 </div>
 
-                {/* Submit button */}
                 <motion.button
                   type="submit"
                   className="w-full py-4 btn-gold text-white font-montserrat text-sm tracking-widest uppercase flex items-center justify-center gap-3"

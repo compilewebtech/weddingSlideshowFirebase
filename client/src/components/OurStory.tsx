@@ -27,7 +27,6 @@ const timeline = [
 export const OurStory = () => {
   return (
     <section className="py-24 px-4 bg-white relative overflow-hidden">
-      {/* Background decoration */}
       <div className="absolute inset-0">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-3xl" />
       </div>
@@ -53,9 +52,7 @@ export const OurStory = () => {
           </div>
         </motion.div>
 
-        {/* Timeline */}
         <div className="relative">
-          {/* Center line */}
           <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gold/30 -translate-x-1/2 hidden md:block" />
 
           {timeline.map((item, index) => (
@@ -87,7 +84,6 @@ export const OurStory = () => {
                 </div>
               </div>
 
-              {/* Center dot */}
               <div className="absolute left-1/2 top-8 -translate-x-1/2 w-4 h-4 bg-gold rounded-full hidden md:block">
                 <div className="absolute inset-0 bg-gold rounded-full animate-ping opacity-30" />
               </div>

@@ -1,11 +1,16 @@
 import { motion } from 'framer-motion';
-//import { Heart, Music } from 'lucide-react';
 import { Heart } from 'lucide-react';
+import { useWeddingContext } from '../contexts/WeddingContext';
+
 interface WelcomeScreenProps {
   onEnter: () => void;
 }
 
 export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
+  const wedding = useWeddingContext();
+
+  if (!wedding) return null;
+
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-cream"
@@ -14,7 +19,6 @@ export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
       transition={{ duration: 1 }}
     >
       <div className="absolute inset-0 overflow-hidden">
-        {/* Decorative floating elements */}
         {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
@@ -58,17 +62,19 @@ export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
         </p>
 
         <h1 className="font-script text-6xl md:text-8xl text-gold mb-4">
-          Sarah & Gaby
+          {wedding.coupleNames}
         </h1>
 
         <div className="flex items-center justify-center gap-4 mb-8">
           <div className="w-16 h-px bg-gold"></div>
-          <span className="font-cormorant text-xl text-charcoal/70 italic">are getting married</span>
+          <span className="font-cormorant text-xl text-charcoal/70 italic">
+            {wedding.inviteText}
+          </span>
           <div className="w-16 h-px bg-gold"></div>
         </div>
 
         <p className="font-cormorant text-2xl text-charcoal/80 mb-12">
-          December 21st, 2026
+          {wedding.weddingDate}
         </p>
 
         <motion.button
@@ -78,7 +84,6 @@ export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
           whileTap={{ scale: 0.98 }}
         >
           <span className="relative z-10 flex items-center gap-3">
-            {/*<Music size={18} />*/}
             Enter Celebration
           </span>
           <motion.div
@@ -89,12 +94,13 @@ export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
           />
         </motion.button>
 
-        <p className="mt-6 font-cormorant text-sm text-charcoal/50 italic">
-          Click to get started and enjoy the celebration! We can't wait to share this special day with you.
-        </p>
+        {wedding.welcomeSubtext && (
+          <p className="mt-6 font-cormorant text-sm text-charcoal/50 italic">
+            {wedding.welcomeSubtext}
+          </p>
+        )}
       </motion.div>
 
-      {/* Corner decorations */}
       <div className="absolute top-8 left-8 w-24 h-24 border-l-2 border-t-2 border-gold/30"></div>
       <div className="absolute top-8 right-8 w-24 h-24 border-r-2 border-t-2 border-gold/30"></div>
       <div className="absolute bottom-8 left-8 w-24 h-24 border-l-2 border-b-2 border-gold/30"></div>

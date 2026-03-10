@@ -1,19 +1,3 @@
-export interface Guest {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  attending: 'yes' | 'no' | 'maybe';
-  numberOfGuests: number;
-  message?: string;
-  submittedAt: string;
-}
-
-export interface SlideImage {
-  url: string;
-  caption: string;
-}
-
 export interface Wedding {
   id: string;
   name: string;
@@ -31,9 +15,8 @@ export interface Wedding {
   quoteText?: string;
   quoteAuthor?: string;
   rsvpDeadline?: string;
-  slides: SlideImage[];
+  slides: { url: string; caption: string }[];
   musicUrl?: string;
   footerQuote?: string;
   footerQuoteAuthor?: string;
-  passwordHash?: string;
 }

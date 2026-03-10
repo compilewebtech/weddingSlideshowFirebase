@@ -3,12 +3,12 @@ import { GuestModel } from '../models/Guest';
 import { validateGuest } from '../middleware/validation';
 import { sendConfirmationEmail } from '../services/emailService';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-// GET all guests
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request<{ weddingId: string }>, res: Response) => {
   try {
-    const guests = await GuestModel.findAll();
+    const { weddingId } = req.params;
+    const guests = await GuestModel.findAll(weddingId);
     return res.json(guests);
   } catch (error) {
     console.error('Error fetching guests:', error);
@@ -16,25 +16,22 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
-// POST new guest
-router.post('/', validateGuest, async (req: Request, res: Response) => {
+router.post('/', validateGuest, async (req: Request<{ weddingId: string }>, res: Response) => {
   try {
-
-    const guestData: any = {
+    const { weddingId } = req.params;
+    const guestData: Record<string, unknown> = {
       name: req.body.name,
       email: req.body.email,
       attending: req.body.attending,
       numberOfGuests: req.body.numberOfGuests || 1,
       submittedAt: new Date().toISOString(),
     };
-
     if (req.body.phone) guestData.phone = req.body.phone;
     if (req.body.message) guestData.message = req.body.message;
     if (req.body.dietaryRestrictions) guestData.dietaryRestrictions = req.body.dietaryRestrictions;
 
-    const savedGuest = await GuestModel.create(guestData);
+    const savedGuest = await GuestModel.create(weddingId, guestData as Parameters<typeof GuestModel.create>[1]);
 
-    // Send confirmation email (non-blocking)
     if (savedGuest.email) {
       sendConfirmationEmail({
         name: savedGuest.name,
@@ -43,7 +40,7 @@ router.post('/', validateGuest, async (req: Request, res: Response) => {
         numberOfGuests: savedGuest.numberOfGuests,
         message: savedGuest.message,
       }).catch((err) => {
-        console.error('⚠️ Email failed (non-blocking):', err.message);
+        console.error('⚠️ Email failed (non-blocking):', err);
       });
     }
 
@@ -54,14 +51,11 @@ router.post('/', validateGuest, async (req: Request, res: Response) => {
   }
 });
 
-// DELETE guest
-router.delete('/:id', async (req: Request<{ id: string }>, res: Response) => {
+router.delete('/:id', async (req: Request<{ weddingId: string; id: string }>, res: Response) => {
   try {
-    const { id } = req.params;
-    const deleted = await GuestModel.deleteById(id);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Guest not found' });
-    }
+    const { weddingId, id } = req.params;
+    const deleted = await GuestModel.deleteById(weddingId, id);
+    if (!deleted) return res.status(404).json({ error: 'Guest not found' });
     return res.json({ message: 'Guest deleted', id });
   } catch (error) {
     console.error('Error deleting guest:', error);
