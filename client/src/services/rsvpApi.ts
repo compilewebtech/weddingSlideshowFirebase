@@ -11,11 +11,9 @@ export interface RsvpFormData {
 }
 
 async function rsvpFetch(url: string, options: RequestInit): Promise<Response> {
-  const fullUrl = API_URL ? `${API_URL}${url.startsWith('/') ? '' : '/'}${url}` : url;
+  const fullUrl = url.startsWith('http') ? url : (API_URL ? `${API_URL}${url.startsWith('/') ? '' : '/'}${url}` : url);
   if (!fullUrl.startsWith('http') && !fullUrl.startsWith('/')) {
-    throw new Error(
-      'API URL not configured. Set VITE_API_URL in .env.local for production builds.'
-    );
+    throw new Error('API URL not configured.');
   }
   try {
     return await fetch(fullUrl, options);
@@ -31,7 +29,7 @@ async function rsvpFetch(url: string, options: RequestInit): Promise<Response> {
 }
 
 function apiPath(path: string): string {
-  return API_URL ? `${API_URL}/api${path}` : `/api${path}`;
+  return API_URL ? `${API_URL}${path}` : `/api${path}`;
 }
 
 export async function sendOtp(weddingId: string, data: RsvpFormData): Promise<void> {
