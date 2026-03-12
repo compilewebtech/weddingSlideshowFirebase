@@ -7,7 +7,7 @@ interface WelcomeScreenProps {
 }
 
 export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
-  const wedding = useWeddingContext();
+  const { wedding } = useWeddingContext();
 
   if (!wedding) return null;
 

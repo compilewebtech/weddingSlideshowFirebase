@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { decodeInviteParams } from '../utils/inviteLink';
 import { AnimatePresence } from 'framer-motion';
 import { WelcomeScreen } from '../components/WelcomeScreen';
 import { Slideshow } from '../components/Slideshow';
@@ -14,7 +15,10 @@ import { WeddingProvider } from '../contexts/WeddingContext';
 
 function WeddingContent() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { wedding, loading, error } = useWedding(id || null);
+  const inviteToken = searchParams.get('invite');
+  const inviteParams = inviteToken ? decodeInviteParams(inviteToken) : null;
   const [hasEntered, setHasEntered] = useState(false);
   const musicUrl = wedding?.musicUrl || '/A Sky Full of Stars Coldplay violin cover.mp3';
   const { isPlaying, toggle, play } = useAudio(musicUrl);
@@ -46,7 +50,7 @@ function WeddingContent() {
   }
 
   return (
-    <WeddingProvider wedding={wedding}>
+    <WeddingProvider wedding={wedding} maxGuestsFromInvite={inviteParams?.maxGuests}>
       <div className="min-h-screen bg-cream">
         <AnimatePresence>
           {!hasEntered && <WelcomeScreen onEnter={handleEnter} />}

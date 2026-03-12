@@ -3,7 +3,7 @@ import { Heart } from 'lucide-react';
 import { useWeddingContext } from '../contexts/WeddingContext';
 
 export const Footer = () => {
-  const wedding = useWeddingContext();
+  const { wedding } = useWeddingContext();
 
   if (!wedding) return null;
 

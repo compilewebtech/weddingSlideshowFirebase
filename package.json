@@ -5,13 +5,14 @@
   "scripts": {
     "dev:client": "cd client && npm run dev",
     "dev:server": "cd server && npm run dev",
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:emulator": "cd server && npm run serve",
+    "dev": "concurrently \"npm run dev:emulator\" \"npm run dev:client\"",
     "build:client": "cd client && npm run build",
     "build:server": "cd server && npm run build",
     "build": "npm run build:client && npm run build:server",
     "deploy:functions": "firebase deploy --only functions",
     "deploy:rules": "firebase deploy --only firestore:rules",
-    "deploy:all": "npm run build:server && firebase deploy",
+    "deploy:all": "npm run build:client && cd server && npm run deploy && cd .. && firebase deploy --only firestore:rules",
     "emulators": "firebase emulators:start",
     "install:all": "npm install && cd client && npm install && cd ../server && npm install"
   },

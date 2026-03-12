@@ -31,8 +31,11 @@ export const GuestModel = {
   },
 
   async create(weddingId: string, data: Omit<GuestDoc, 'id' | 'createdAt'>): Promise<GuestDoc> {
+    const clean = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    ) as Omit<GuestDoc, 'id' | 'createdAt'>;
     const docRef = await getGuestsCollection(weddingId).add({
-      ...data,
+      ...clean,
       createdAt: FieldValue.serverTimestamp(),
     });
     const doc = await docRef.get();
@@ -53,6 +56,18 @@ export const GuestModel = {
   async findById(weddingId: string, id: string): Promise<GuestDoc | null> {
     const doc = await getGuestsCollection(weddingId).doc(id).get();
     if (!doc.exists) return null;
+    return { id: doc.id, ...doc.data() } as GuestDoc;
+  },
+
+  async findByEmail(weddingId: string, email: string): Promise<GuestDoc | null> {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return null;
+    const snapshot = await getGuestsCollection(weddingId)
+      .where('email', '==', normalized)
+      .limit(1)
+      .get();
+    if (snapshot.empty) return null;
+    const doc = snapshot.docs[0];
     return { id: doc.id, ...doc.data() } as GuestDoc;
   },
 };

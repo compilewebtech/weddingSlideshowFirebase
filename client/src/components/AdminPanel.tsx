@@ -12,7 +12,7 @@ import {
 } from '../utils/password';
 
 export const AdminPanel = () => {
-  const wedding = useWeddingContext();
+  const { wedding } = useWeddingContext();
   const { user } = useAuth();
   const { guests, exportToExcel, stats } = useGuests(wedding?.id ?? null);
   const [isOpen, setIsOpen] = useState(false);

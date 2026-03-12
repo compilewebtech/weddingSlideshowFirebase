@@ -8,12 +8,12 @@ service cloud.firestore {
         && resource.data.createdBy == request.auth.uid;
 
       match /guests/{guestId} {
-        allow create: if request.resource.data.keys().hasAll(['name', 'attending'])
-                      && request.resource.data.name is string
-                      && request.resource.data.name.size() > 0
-                      && request.resource.data.name.size() <= 100;
+        allow create: if false;
         allow read, delete: if request.auth != null
           && get(/databases/$(database)/documents/weddings/$(weddingId)).data.createdBy == request.auth.uid;
+      }
+      match /otpCodes/{otpId} {
+        allow read, write: if false;
       }
     }
   }

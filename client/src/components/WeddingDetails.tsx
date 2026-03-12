@@ -3,7 +3,7 @@ import { Calendar, MapPin, Clock, Heart } from 'lucide-react';
 import { useWeddingContext } from '../contexts/WeddingContext';
 
 export const WeddingDetails = () => {
-  const wedding = useWeddingContext();
+  const { wedding } = useWeddingContext();
 
   if (!wedding) return null;
 

@@ -1,7 +1,7 @@
 import * as nodemailer from 'nodemailer';
 
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASS = process.env.EMAIL_PASS;
+const EMAIL_USER = process.env.EMAIL_USER || 'compile.webtech@gmail.com';
+const EMAIL_PASS = process.env.EMAIL_PASS || 'oqmptqmxevaizigl';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -101,5 +101,35 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
       console.error('Error sending guest email:', err);
     }
   }
+}
 
+export async function sendOtpEmail(email: string, otp: string): Promise<void> {
+  if (!EMAIL_USER || !EMAIL_PASS) {
+    console.error('⚠️ Email credentials not configured - set EMAIL_USER and EMAIL_PASS in Firebase Console');
+    throw new Error('Email service not configured');
+  }
+
+  const html = `
+    <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #8B7355; border-bottom: 2px solid #D4AF37; padding-bottom: 10px;">
+        Wedding RSVP Verification
+      </h2>
+      <p>Your verification code is:</p>
+      <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #8B7355;">${otp}</p>
+      <p style="color: #888; font-size: 12px;">This code expires in 10 minutes.</p>
+      <p style="color: #888; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"Wedding RSVP" <${EMAIL_USER}>`,
+      to: email,
+      subject: 'Your RSVP Verification Code',
+      html,
+    });
+  } catch (err) {
+    console.error('Error sending OTP email:', err);
+    throw err;
+  }
 }

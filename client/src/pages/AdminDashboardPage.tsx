@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Plus, Settings, Users, LogOut, Trash2, Link2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Settings, Users, LogOut, Trash2, Link2, Copy, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMyWeddings } from '../hooks/useWeddings';
 import { deleteWedding } from '../services/weddingService';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { encodeInviteParams } from '../utils/inviteLink';
 import type { Wedding } from '../types';
 
 export function AdminDashboardPage() {
@@ -14,6 +15,9 @@ export function AdminDashboardPage() {
   const navigate = useNavigate();
   const [deleteTarget, setDeleteTarget] = useState<Wedding | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [linkModalWedding, setLinkModalWedding] = useState<Wedding | null>(null);
+  const [linkGuestCount, setLinkGuestCount] = useState(3);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -50,12 +54,24 @@ export function AdminDashboardPage() {
     if (!deleting) setDeleteTarget(null);
   };
 
-  const copyWeddingLink = (e: React.MouseEvent, weddingId: string) => {
+  const openLinkModal = (e: React.MouseEvent, wedding: Wedding) => {
     e.preventDefault();
     e.stopPropagation();
-    const url = `${window.location.origin}/wedding/${weddingId}`;
-    navigator.clipboard.writeText(url);
+    setLinkModalWedding(wedding);
+    setLinkGuestCount(3);
+    setLinkCopied(false);
   };
+
+  const generateAndCopyLink = async () => {
+    if (!linkModalWedding) return;
+    const token = encodeInviteParams({ maxGuests: linkGuestCount });
+    const url = `${window.location.origin}/wedding/${linkModalWedding.id}?invite=${token}`;
+    await navigator.clipboard.writeText(url);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const closeLinkModal = () => setLinkModalWedding(null);
 
   if (authLoading) {
     return (
@@ -153,9 +169,9 @@ export function AdminDashboardPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={(e) => copyWeddingLink(e, wedding.id)}
+                      onClick={(e) => openLinkModal(e, wedding)}
                       className="p-2 text-charcoal/50 hover:text-gold hover:bg-gold/10 rounded transition-colors"
-                      title="Copy wedding link"
+                      title="Generate invite link"
                     >
                       <Link2 size={18} />
                     </button>
@@ -207,6 +223,60 @@ export function AdminDashboardPage() {
             onConfirm={handleDeleteConfirm}
             onCancel={handleDeleteCancel}
           />
+
+          <AnimatePresence>
+            {linkModalWedding && (
+              <motion.div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={closeLinkModal}
+              >
+                <motion.div
+                  className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full"
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0.95 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="font-script text-2xl text-gold mb-2">Generate Invite Link</h3>
+                  <p className="font-montserrat text-sm text-charcoal/70 mb-4">
+                    Set the maximum number of guests for this invitation. The link will limit the guest dropdown accordingly.
+                  </p>
+                  <div className="mb-4">
+                    <label className="block font-montserrat text-xs uppercase tracking-wider text-charcoal/70 mb-2">
+                      Number of guests allowed
+                    </label>
+                    <select
+                      value={linkGuestCount}
+                      onChange={(e) => setLinkGuestCount(Number(e.target.value))}
+                      className="w-full px-4 py-3 border border-charcoal/20 font-cormorant text-lg"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={closeLinkModal}
+                      className="flex-1 py-3 border border-charcoal/20 font-montserrat text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={generateAndCopyLink}
+                      className="flex-1 py-3 btn-gold text-white font-montserrat text-sm flex items-center justify-center gap-2"
+                    >
+                      {linkCopied ? <Check size={18} /> : <Copy size={18} />}
+                      {linkCopied ? 'Copied!' : 'Generate & Copy'}
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           </>
         )}
       </main>

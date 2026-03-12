@@ -9,7 +9,7 @@ const DEFAULT_SLIDES = [
 ];
 
 export const Slideshow = () => {
-  const wedding = useWeddingContext();
+  const { wedding } = useWeddingContext();
   const slides = wedding?.slides?.length ? wedding.slides : DEFAULT_SLIDES;
 
   const [currentSlide, setCurrentSlide] = useState(0);

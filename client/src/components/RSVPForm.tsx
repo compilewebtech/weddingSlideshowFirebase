@@ -1,14 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Heart, Check, Mail } from 'lucide-react';
-import { useGuests } from '../hooks/useGuests';
+import { Send, Heart, Check, Mail, KeyRound } from 'lucide-react';
 import { useWeddingContext } from '../contexts/WeddingContext';
+import { sendOtp, verifyOtp } from '../services/rsvpApi';
+
+type Step = 'form' | 'otp' | 'success';
 
 export const RSVPForm = () => {
-  const wedding = useWeddingContext();
-  const { addGuest } = useGuests(wedding?.id ?? null);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const { wedding, maxGuestsFromInvite } = useWeddingContext();
+  const [step, setStep] = useState<Step>('form');
   const [showEmailNotification, setShowEmailNotification] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [otp, setOtp] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,15 +22,37 @@ export const RSVPForm = () => {
     message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    addGuest(formData);
-    setIsSubmitted(true);
-    setShowEmailNotification(true);
+    if (!wedding?.id) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await sendOtp(wedding.id, formData);
+      setStep('otp');
+      setOtp('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    setTimeout(() => {
-      setShowEmailNotification(false);
-    }, 4000);
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!wedding?.id || !otp.trim()) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await verifyOtp(wedding.id, formData.email, otp.trim());
+      setStep('success');
+      setShowEmailNotification(true);
+      setTimeout(() => setShowEmailNotification(false), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to confirm RSVP');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (
@@ -38,6 +64,20 @@ export const RSVPForm = () => {
       [name]: name === 'numberOfGuests' ? parseInt(value) : value,
     }));
   };
+
+  const handleBackToForm = () => {
+    setStep('form');
+    setError(null);
+    setOtp('');
+  };
+
+  const maxGuests = maxGuestsFromInvite ?? 5;
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      numberOfGuests: Math.min(prev.numberOfGuests, maxGuests),
+    }));
+  }, [maxGuests]);
 
   return (
     <section id="rsvp" className="py-24 px-4 bg-blush/30 relative overflow-hidden">
@@ -86,18 +126,22 @@ export const RSVPForm = () => {
         </motion.div>
 
         <AnimatePresence mode="wait">
-          {!isSubmitted ? (
+          {step === 'form' && (
             <motion.form
               key="form"
-              onSubmit={handleSubmit}
+              onSubmit={handleSendOtp}
               className="bg-white p-8 md:p-12 shadow-xl border border-gold/10"
               initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.8 }}
             >
               <div className="grid gap-6">
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 font-montserrat text-sm">
+                    {error}
+                  </div>
+                )}
                 <div>
                   <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
                     Your Name *
@@ -170,11 +214,11 @@ export const RSVPForm = () => {
                     </label>
                     <select
                       name="numberOfGuests"
-                      value={formData.numberOfGuests}
+                      value={Math.min(formData.numberOfGuests, maxGuests)}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg"
                     >
-                      {[1, 2, 3, 4, 5].map((num) => (
+                      {Array.from({ length: maxGuests }, (_, i) => i + 1).map((num) => (
                         <option key={num} value={num}>
                           {num} {num === 1 ? 'Guest' : 'Guests'}
                         </option>
@@ -213,16 +257,77 @@ export const RSVPForm = () => {
 
                 <motion.button
                   type="submit"
-                  className="w-full py-4 btn-gold text-white font-montserrat text-sm tracking-widest uppercase flex items-center justify-center gap-3"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
+                  disabled={loading}
+                  className="w-full py-4 btn-gold text-white font-montserrat text-sm tracking-widest uppercase flex items-center justify-center gap-3 disabled:opacity-60"
+                  whileHover={!loading ? { scale: 1.01 } : {}}
+                  whileTap={!loading ? { scale: 0.99 } : {}}
                 >
-                  <Send size={18} />
-                  Send RSVP
+                  <KeyRound size={18} />
+                  {loading ? 'Sending...' : 'Send Verification Code'}
                 </motion.button>
               </div>
             </motion.form>
-          ) : (
+          )}
+
+          {step === 'otp' && (
+            <motion.form
+              key="otp"
+              onSubmit={handleVerifyOtp}
+              className="bg-white p-8 md:p-12 shadow-xl border border-gold/10"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="grid gap-6">
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 font-montserrat text-sm">
+                    {error}
+                  </div>
+                )}
+                <p className="font-cormorant text-lg text-charcoal/70 text-center">
+                  We sent a 6-digit verification code to <strong>{formData.email}</strong>.
+                  Please enter it below to confirm your RSVP.
+                </p>
+                <div>
+                  <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
+                    Verification Code *
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    className="w-full px-4 py-4 border border-charcoal/20 bg-transparent font-cormorant text-2xl text-center tracking-[0.5em] transition-all"
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={handleBackToForm}
+                    className="flex-1 py-3 border border-charcoal/20 font-montserrat text-sm text-charcoal/70 hover:border-gold/50 transition-all"
+                  >
+                    Back
+                  </button>
+                  <motion.button
+                    type="submit"
+                    disabled={loading || otp.length !== 6}
+                    className="flex-1 py-4 btn-gold text-white font-montserrat text-sm tracking-widest uppercase flex items-center justify-center gap-3 disabled:opacity-60"
+                    whileHover={!loading && otp.length === 6 ? { scale: 1.01 } : {}}
+                    whileTap={!loading && otp.length === 6 ? { scale: 0.99 } : {}}
+                  >
+                    <Send size={18} />
+                    {loading ? 'Confirming...' : 'Confirm RSVP'}
+                  </motion.button>
+                </div>
+              </div>
+            </motion.form>
+          )}
+
+          {step === 'success' && (
             <motion.div
               key="success"
               className="bg-white p-12 shadow-xl border border-gold/10 text-center"
