@@ -1,5 +1,5 @@
 const isDev = import.meta.env.DEV;
-const API_URL = isDev ? '' : (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_URL = isDev ? '' : 'https://us-central1-wedding-invitation-slideshow.cloudfunctions.net/api';
 
 export interface RsvpFormData {
   name: string;

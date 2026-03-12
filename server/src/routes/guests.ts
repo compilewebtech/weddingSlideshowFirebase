@@ -18,7 +18,7 @@ router.post('/send-otp', validateGuest, async (req: Request<{ weddingId: string 
       return res.status(400).json({ error: 'Email is required for verification' });
     }
 
-    const useInMemory = process.env.USE_IN_MEMORY_OTP === 'true' || process.env.NODE_ENV !== 'production';
+    const useInMemory = false;
     try {
       const existing = await GuestModel.findByEmail(weddingId, email);
       if (existing) {
@@ -51,7 +51,7 @@ router.post('/send-otp', validateGuest, async (req: Request<{ weddingId: string 
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error('Error sending OTP:', err.message, err);
-    const isDev = process.env.NODE_ENV !== 'production';
+    const isDev = false;
     const isEmailError = err.message.includes('Email') || err.message.includes('auth') || err.message.includes('ECONNECTION') || err.message.includes('Invalid login');
     const message = isEmailError
       ? 'Email service unavailable. Please try again later or contact the hosts.'
@@ -77,7 +77,7 @@ router.post('/verify-otp', async (req: Request<{ weddingId: string }>, res: Resp
       return res.status(400).json({ error: 'Invalid or expired verification code' });
     }
 
-    const useInMemory = process.env.USE_IN_MEMORY_OTP === 'true' || process.env.NODE_ENV !== 'production';
+    const useInMemory = false;
     try {
       const existing = await GuestModel.findByEmail(weddingId, normalizedEmail);
       if (existing) {
@@ -131,7 +131,7 @@ router.post('/verify-otp', async (req: Request<{ weddingId: string }>, res: Resp
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error('Error verifying OTP:', err.message, err);
-    const isDev = process.env.NODE_ENV !== 'production';
+    const isDev = false;
     return res.status(500).json({
       error: 'Failed to confirm RSVP',
       ...(isDev && { debug: err.message }),

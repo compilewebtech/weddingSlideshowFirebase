@@ -1,9 +1,3 @@
-import path from 'path';
-import dotenv from 'dotenv';
-
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
-dotenv.config({ path: path.join(process.cwd(), 'server', '.env') });
-
 import './firebase-admin-init';
 import { onRequest } from 'firebase-functions/v2/https';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
@@ -16,16 +10,17 @@ import { sendConfirmationEmail } from './services/emailService';
 
 const app = express();
 
-const envOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
-  : [];
+const CLIENT_URLS = [
+  'https://weddingslideshowf.netlify.app',
+  'https://weddingslideshow.netlify.app',
+];
 
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:4173',
-  ...envOrigins,
-].filter(Boolean) as string[];
+  ...CLIENT_URLS,
+];
 
 function isAllowedOrigin(origin: string | undefined): boolean {
   if (!origin) return true;

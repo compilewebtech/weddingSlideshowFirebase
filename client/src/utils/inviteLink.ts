@@ -1,4 +1,4 @@
-const SECRET = (import.meta.env.VITE_INVITE_SECRET || 'wedding-invite-2024').slice(0, 16).padEnd(16, '0');
+const SECRET = 'wedding-invite-2024'.slice(0, 16).padEnd(16, '0');
 
 function xorTransform(str: string): string {
   let result = '';

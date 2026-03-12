@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = 'https://us-central1-wedding-invitation-slideshow.cloudfunctions.net/api';
 
 export function getAuthToken(): Promise<string | null> {
   return import('../lib/firebase').then(({ auth }) => {

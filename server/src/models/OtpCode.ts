@@ -2,7 +2,7 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 const db = getFirestore();
 const OTP_EXPIRY_MINUTES = 10;
-const USE_IN_MEMORY = process.env.USE_IN_MEMORY_OTP === 'true' || process.env.NODE_ENV !== 'production';
+const USE_IN_MEMORY = false;
 
 function docIdFromEmail(email: string): string {
   return email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
