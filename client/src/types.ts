@@ -5,6 +5,7 @@ export interface Guest {
   phone?: string;
   attending: 'yes' | 'no' | 'maybe';
   numberOfGuests: number;
+  guestNames?: string[];
   message?: string;
   submittedAt: string;
 }
@@ -20,6 +21,7 @@ export interface Wedding {
   createdBy: string;
   createdAt: string;
   coupleNames: string;
+  coupleEmail?: string;
   inviteText: string;
   weddingDate: string;
   welcomeSubtext?: string;
@@ -31,6 +33,9 @@ export interface Wedding {
   quoteText?: string;
   quoteAuthor?: string;
   rsvpDeadline?: string;
+  paymentType?: 'whish' | 'bank';
+  paymentWhishPhone?: string;
+  paymentBankAccount?: string;
   slides: SlideImage[];
   musicUrl?: string;
   footerQuote?: string;

@@ -19,7 +19,10 @@ interface GuestEmail {
   message?: string;
 }
 
-export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
+export async function sendConfirmationEmail(
+  guest: GuestEmail,
+  options?: { coupleEmail?: string }
+): Promise<void> {
   if (!EMAIL_USER || !EMAIL_PASS) {
     console.warn('⚠️ Email credentials not configured, skipping email');
     return;
@@ -62,15 +65,19 @@ export async function sendConfirmationEmail(guest: GuestEmail): Promise<void> {
     </div>
   `;
 
-  try {
-    await transporter.sendMail({
-      from: `"Wedding RSVP" <${EMAIL_USER}>`,
-      to: EMAIL_USER,
-      subject,
-      html,
-    });
-  } catch (err) {
-    console.error('Error sending confirmation email:', err);
+  const coupleEmail = options?.coupleEmail?.trim();
+  const recipient = coupleEmail || EMAIL_USER;
+  if (recipient) {
+    try {
+      await transporter.sendMail({
+        from: `"Wedding RSVP" <${EMAIL_USER}>`,
+        to: recipient,
+        subject,
+        html,
+      });
+    } catch (err) {
+      console.error('Error sending confirmation email to couple:', err);
+    }
   }
 
   if (guest.email) {

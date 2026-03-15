@@ -6,6 +6,7 @@ export interface RsvpFormData {
   email: string;
   attending: 'yes' | 'no' | 'maybe';
   numberOfGuests: number;
+  guestNames?: string[];
   dietaryRestrictions?: string;
   message?: string;
 }

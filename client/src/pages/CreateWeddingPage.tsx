@@ -119,6 +119,21 @@ export function CreateWeddingPage() {
               </div>
               <div>
                 <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
+                  Couple Email (RSVP notifications)
+                </label>
+                <input
+                  type="email"
+                  value={form.coupleEmail || ''}
+                  onChange={(e) => update('coupleEmail', e.target.value)}
+                  className="w-full px-4 py-3 border border-charcoal/20"
+                  placeholder="couple@example.com"
+                />
+                <p className="mt-1 font-montserrat text-xs text-charcoal/50">
+                  You&apos;ll receive an email each time someone submits an RSVP.
+                </p>
+              </div>
+              <div>
+                <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
                   Invite Text
                 </label>
                 <input
@@ -219,6 +234,82 @@ export function CreateWeddingPage() {
                   placeholder="Zouk Mkayel, Lebanon"
                 />
               </div>
+            </div>
+          </section>
+
+          <section className="bg-white p-6 rounded-lg border border-gold/20">
+            <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
+              Wedding Payment / Gift
+            </h2>
+            <p className="font-montserrat text-xs text-charcoal/60 mb-4">
+              Optional. Guests will see this on the invitation when reserving.
+            </p>
+            <div className="grid gap-4">
+              <div>
+                <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
+                  Payment Option
+                </label>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentType"
+                      checked={(form.paymentType || '') === 'whish'}
+                      onChange={() => update('paymentType', 'whish')}
+                      className="text-gold"
+                    />
+                    <span className="font-montserrat text-sm">Whish (phone number)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentType"
+                      checked={(form.paymentType || '') === 'bank'}
+                      onChange={() => update('paymentType', 'bank')}
+                      className="text-gold"
+                    />
+                    <span className="font-montserrat text-sm">Wedding Bank Account</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentType"
+                      checked={!form.paymentType}
+                      onChange={() => update('paymentType', undefined)}
+                      className="text-gold"
+                    />
+                    <span className="font-montserrat text-sm">None</span>
+                  </label>
+                </div>
+              </div>
+              {form.paymentType === 'whish' && (
+                <div>
+                  <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
+                    Whish Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={form.paymentWhishPhone || ''}
+                    onChange={(e) => update('paymentWhishPhone', e.target.value)}
+                    className="w-full px-4 py-3 border border-charcoal/20"
+                    placeholder="+961 70 123 456"
+                  />
+                </div>
+              )}
+              {form.paymentType === 'bank' && (
+                <div>
+                  <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
+                    Bank Account Number
+                  </label>
+                  <input
+                    type="text"
+                    value={form.paymentBankAccount || ''}
+                    onChange={(e) => update('paymentBankAccount', e.target.value)}
+                    className="w-full px-4 py-3 border border-charcoal/20"
+                    placeholder="IBAN or account number"
+                  />
+                </div>
+              )}
             </div>
           </section>
 

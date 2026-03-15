@@ -85,13 +85,14 @@ export function WeddingGuestsPage() {
                   <th className="px-4 py-3 text-left font-montserrat text-xs uppercase text-charcoal/70">Email</th>
                   <th className="px-4 py-3 text-center font-montserrat text-xs uppercase text-charcoal/70">Status</th>
                   <th className="px-4 py-3 text-center font-montserrat text-xs uppercase text-charcoal/70">Guests</th>
+                  <th className="px-4 py-3 text-left font-montserrat text-xs uppercase text-charcoal/70">Guest Names</th>
                   <th className="px-4 py-3 text-left font-montserrat text-xs uppercase text-charcoal/70">Message</th>
                 </tr>
               </thead>
               <tbody>
                 {guests.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center text-charcoal/50 font-cormorant italic">
+                    <td colSpan={6} className="px-4 py-12 text-center text-charcoal/50 font-cormorant italic">
                       No RSVPs yet
                     </td>
                   </tr>
@@ -114,6 +115,9 @@ export function WeddingGuestsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center font-cormorant">{guest.numberOfGuests}</td>
+                      <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs">
+                        {guest.guestNames?.length ? guest.guestNames.join(', ') : '-'}
+                      </td>
                       <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs truncate">
                         {guest.message || '-'}
                       </td>

@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { decodeInviteParams } from '../utils/inviteLink';
 import { AnimatePresence } from 'framer-motion';
 import { WelcomeScreen } from '../components/WelcomeScreen';
 import { Slideshow } from '../components/Slideshow';
 import { WeddingDetails } from '../components/WeddingDetails';
+import { WeddingPayment } from '../components/WeddingPayment';
 import { RSVPForm } from '../components/RSVPForm';
-import { AdminPanel } from '../components/AdminPanel';
 import { MusicControl } from '../components/MusicControl';
 import { Footer } from '../components/Footer';
 import { useAudio } from '../hooks/useAudio';
@@ -27,6 +27,15 @@ function WeddingContent() {
     play();
     setHasEntered(true);
   };
+
+  useEffect(() => {
+    if (wedding?.coupleNames) {
+      document.title = `${wedding.coupleNames} - Wedding Invitation`;
+    }
+    return () => {
+      document.title = 'Wedding';
+    };
+  }, [wedding?.coupleNames]);
 
   if (loading) {
     return (
@@ -62,10 +71,10 @@ function WeddingContent() {
             <main>
               <Slideshow />
               <WeddingDetails />
+              <WeddingPayment />
               <RSVPForm />
             </main>
             <Footer />
-            <AdminPanel />
           </>
         )}
       </div>

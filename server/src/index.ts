@@ -1,12 +1,10 @@
 import './firebase-admin-init';
 import { onRequest } from 'firebase-functions/v2/https';
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import express from 'express';
 import cors from 'cors';
 import weddingRoutes from './routes/weddings';
 import guestRoutes from './routes/guests';
 import { errorHandler } from './middleware/errorHandler';
-import { sendConfirmationEmail } from './services/emailService';
 
 const app = express();
 
@@ -57,38 +55,13 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 
-app.use('/api/weddings', weddingRoutes);
-app.use('/api/weddings/:weddingId/guests', guestRoutes);
+app.use('/weddings', weddingRoutes);
+app.use('/weddings/:weddingId/guests', guestRoutes);
 
-app.get('/api/health', (_req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.use(errorHandler);
 
 export const api = onRequest(app);
-
-export const onGuestCreated = onDocumentCreated(
-  'weddings/{weddingId}/guests/{guestId}',
-  async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) return;
-
-    const data = snapshot.data();
-    const name = data?.name;
-    const attending = data?.attending;
-
-    if (!name || !attending) {
-      console.warn('Guest document missing name or attending');
-      return;
-    }
-
-    await sendConfirmationEmail({
-      name: String(name),
-      email: data?.email ? String(data.email) : '',
-      attending: attending as 'yes' | 'no' | 'maybe',
-      numberOfGuests: data?.numberOfGuests ?? 1,
-      message: data?.message ? String(data.message) : undefined,
-    });
-  }
-);

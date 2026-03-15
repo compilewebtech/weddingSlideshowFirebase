@@ -18,6 +18,7 @@ export const RSVPForm = () => {
     email: '',
     attending: 'yes' as 'yes' | 'no' | 'maybe',
     numberOfGuests: 1,
+    guestNames: [''] as string[],
     dietaryRestrictions: '',
     message: '',
   });
@@ -28,7 +29,11 @@ export const RSVPForm = () => {
     setError(null);
     setLoading(true);
     try {
-      await sendOtp(wedding.id, formData);
+      const guestNames =
+        formData.attending === 'no'
+          ? [formData.name.trim()].filter(Boolean)
+          : formData.guestNames.map((n) => n.trim()).filter(Boolean);
+      await sendOtp(wedding.id, { ...formData, guestNames, name: formData.guestNames[0]?.trim() || formData.name });
       setStep('otp');
       setOtp('');
     } catch (err) {
@@ -59,10 +64,25 @@ export const RSVPForm = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'numberOfGuests' ? parseInt(value) : value,
-    }));
+    if (name === 'numberOfGuests') {
+      const num = parseInt(value);
+      setFormData((prev) => {
+        const newGuestNames = [...prev.guestNames];
+        while (newGuestNames.length < num) newGuestNames.push('');
+        newGuestNames.length = num;
+        return { ...prev, numberOfGuests: num, guestNames: newGuestNames, name: newGuestNames[0] ?? prev.name };
+      });
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const setGuestName = (index: number, value: string) => {
+    setFormData((prev) => {
+      const next = [...prev.guestNames];
+      next[index] = value;
+      return { ...prev, guestNames: next, name: index === 0 ? value : prev.name };
+    });
   };
 
   const handleBackToForm = () => {
@@ -73,10 +93,13 @@ export const RSVPForm = () => {
 
   const maxGuests = maxGuestsFromInvite ?? 5;
   useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      numberOfGuests: Math.min(prev.numberOfGuests, maxGuests),
-    }));
+    setFormData((prev) => {
+      const capped = Math.min(prev.numberOfGuests, maxGuests);
+      const newGuestNames = [...prev.guestNames];
+      while (newGuestNames.length < capped) newGuestNames.push('');
+      newGuestNames.length = capped;
+      return { ...prev, numberOfGuests: capped, guestNames: newGuestNames };
+    });
   }, [maxGuests]);
 
   return (
@@ -142,20 +165,22 @@ export const RSVPForm = () => {
                     {error}
                   </div>
                 )}
-                <div>
-                  <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
-                    Your Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg transition-all"
-                    placeholder="Enter your full name"
-                  />
-                </div>
+                {formData.attending === 'no' && (
+                  <div>
+                    <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
+                      Your Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg transition-all"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
@@ -186,10 +211,20 @@ export const RSVPForm = () => {
                         key={option.value}
                         type="button"
                         onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            attending: option.value as 'yes' | 'no' | 'maybe',
-                          }))
+                          setFormData((prev) => {
+                            const next = { ...prev, attending: option.value as 'yes' | 'no' | 'maybe' };
+                            if (next.attending !== 'no') {
+                              const n = next.numberOfGuests;
+                              const guestNames = [...next.guestNames];
+                              while (guestNames.length < n) guestNames.push('');
+                              guestNames.length = n;
+                              if (!guestNames[0] && prev.name) guestNames[0] = prev.name;
+                              next.guestNames = guestNames;
+                            } else if (prev.guestNames[0]) {
+                              next.name = prev.guestNames[0];
+                            }
+                            return next;
+                          })
                         }
                         className={`p-4 border transition-all text-center ${
                           formData.attending === option.value
@@ -208,22 +243,42 @@ export const RSVPForm = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4"
                   >
-                    <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
-                      Number of Guests (including yourself)
-                    </label>
-                    <select
-                      name="numberOfGuests"
-                      value={Math.min(formData.numberOfGuests, maxGuests)}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg"
-                    >
-                      {Array.from({ length: maxGuests }, (_, i) => i + 1).map((num) => (
-                        <option key={num} value={num}>
-                          {num} {num === 1 ? 'Guest' : 'Guests'}
-                        </option>
+                    <div>
+                      <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
+                        Number of Guests (including yourself)
+                      </label>
+                      <select
+                        name="numberOfGuests"
+                        value={Math.min(formData.numberOfGuests, maxGuests)}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg"
+                      >
+                        {Array.from({ length: maxGuests }, (_, i) => i + 1).map((num) => (
+                          <option key={num} value={num}>
+                            {num} {num === 1 ? 'Guest' : 'Guests'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-3">
+                      <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
+                        Names of all guests attending
+                      </label>
+                      {Array.from({ length: formData.numberOfGuests }, (_, i) => (
+                        <div key={i}>
+                          <input
+                            type="text"
+                            value={formData.guestNames[i] ?? ''}
+                            onChange={(e) => setGuestName(i, e.target.value)}
+                            required
+                            className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg transition-all"
+                            placeholder={i === 0 ? 'Your name' : `Guest ${i + 1} name`}
+                          />
+                        </div>
                       ))}
-                    </select>
+                    </div>
                   </motion.div>
                 )}
 

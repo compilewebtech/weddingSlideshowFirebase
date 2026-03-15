@@ -11,6 +11,6 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
 
   res.status(500).json({
     error: 'Internal server error',
-    ...(false && { details: err.message, stack: err.stack }),
+    ...(false ? { details: err.message, stack: err.stack } : {}),
   });
 }

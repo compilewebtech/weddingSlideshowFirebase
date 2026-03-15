@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Settings, Users, LogOut, Trash2, Link2, Copy, Check } from 'lucide-react';
+import { Plus, Settings, Users, LogOut, Trash2, Link2, Copy, Check, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMyWeddings } from '../hooks/useWeddings';
 import { deleteWedding } from '../services/weddingService';
@@ -18,6 +18,7 @@ export function AdminDashboardPage() {
   const [linkModalWedding, setLinkModalWedding] = useState<Wedding | null>(null);
   const [linkGuestCount, setLinkGuestCount] = useState(3);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [dashboardCopiedId, setDashboardCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -72,6 +73,15 @@ export function AdminDashboardPage() {
   };
 
   const closeLinkModal = () => setLinkModalWedding(null);
+
+  const copyDashboardLink = async (e: React.MouseEvent, wedding: Wedding) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/wedding/${wedding.id}/dashboard`;
+    await navigator.clipboard.writeText(url);
+    setDashboardCopiedId(wedding.id);
+    setTimeout(() => setDashboardCopiedId(null), 2000);
+  };
 
   if (authLoading) {
     return (
@@ -167,14 +177,28 @@ export function AdminDashboardPage() {
                         {wedding.weddingDate}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => openLinkModal(e, wedding)}
-                      className="p-2 text-charcoal/50 hover:text-gold hover:bg-gold/10 rounded transition-colors"
-                      title="Generate invite link"
-                    >
-                      <Link2 size={18} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => copyDashboardLink(e, wedding)}
+                        className="p-2 text-charcoal/50 hover:text-gold hover:bg-gold/10 rounded transition-colors"
+                        title="Copy dashboard link for couple"
+                      >
+                        {dashboardCopiedId === wedding.id ? (
+                          <Check size={18} className="text-green-600" />
+                        ) : (
+                          <LayoutDashboard size={18} />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => openLinkModal(e, wedding)}
+                        className="p-2 text-charcoal/50 hover:text-gold hover:bg-gold/10 rounded transition-colors"
+                        title="Generate invite link"
+                      >
+                        <Link2 size={18} />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-wrap gap-3 mt-4">
                     <Link

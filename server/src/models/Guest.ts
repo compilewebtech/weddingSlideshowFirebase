@@ -9,6 +9,7 @@ export interface GuestDoc {
   phone?: string;
   attending: 'yes' | 'no' | 'maybe';
   numberOfGuests: number;
+  guestNames?: string[];
   message?: string;
   dietaryRestrictions?: string;
   submittedAt: string;

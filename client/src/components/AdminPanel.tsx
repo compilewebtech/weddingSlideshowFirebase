@@ -217,13 +217,14 @@ export const AdminPanel = () => {
                             <th className="px-4 py-3 text-left font-montserrat text-xs uppercase tracking-wider text-charcoal/70">Email</th>
                             <th className="px-4 py-3 text-center font-montserrat text-xs uppercase tracking-wider text-charcoal/70">Status</th>
                             <th className="px-4 py-3 text-center font-montserrat text-xs uppercase tracking-wider text-charcoal/70">Guests</th>
+                            <th className="px-4 py-3 text-left font-montserrat text-xs uppercase tracking-wider text-charcoal/70">Guest Names</th>
                             <th className="px-4 py-3 text-left font-montserrat text-xs uppercase tracking-wider text-charcoal/70">Message</th>
                           </tr>
                         </thead>
                         <tbody>
                           {guests.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="px-4 py-8 text-center text-charcoal/50 font-cormorant text-lg italic">
+                              <td colSpan={6} className="px-4 py-8 text-center text-charcoal/50 font-cormorant text-lg italic">
                                 No RSVPs yet
                               </td>
                             </tr>
@@ -250,6 +251,9 @@ export const AdminPanel = () => {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-center font-cormorant text-lg">{guest.numberOfGuests}</td>
+                                <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs">
+                                  {guest.guestNames?.length ? guest.guestNames.join(', ') : '-'}
+                                </td>
                                 <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs truncate">{guest.message || '-'}</td>
                               </motion.tr>
                             ))

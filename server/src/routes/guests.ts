@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { GuestModel } from '../models/Guest';
 import { OtpModel } from '../models/OtpCode';
+import { WeddingModel } from '../models/Wedding';
 import { validateGuest } from '../middleware/validation';
 import { sendConfirmationEmail, sendOtpEmail } from '../services/emailService';
 
@@ -42,6 +43,9 @@ router.post('/send-otp', validateGuest, async (req: Request<{ weddingId: string 
     if (req.body.phone) guestData.phone = req.body.phone;
     if (req.body.message) guestData.message = req.body.message;
     if (req.body.dietaryRestrictions) guestData.dietaryRestrictions = req.body.dietaryRestrictions;
+    if (Array.isArray(req.body.guestNames) && req.body.guestNames.length > 0) {
+      guestData.guestNames = req.body.guestNames.filter((n: unknown) => typeof n === 'string' && n.trim());
+    }
 
     const otp = generateOtp();
     await OtpModel.create(weddingId, email, otp, guestData);
@@ -58,7 +62,7 @@ router.post('/send-otp', validateGuest, async (req: Request<{ weddingId: string 
       : 'Failed to send verification code';
     return res.status(500).json({
       error: message,
-      ...(isDev && { debug: err.message }),
+      ...(isDev ? { debug: err.message } : {}),
     });
   }
 });
@@ -100,6 +104,7 @@ router.post('/verify-otp', async (req: Request<{ weddingId: string }>, res: Resp
       phone: guestData.phone as string | undefined,
       message: guestData.message as string | undefined,
       dietaryRestrictions: guestData.dietaryRestrictions as string | undefined,
+      guestNames: Array.isArray(guestData.guestNames) ? guestData.guestNames : undefined,
     };
 
     let savedGuest;
@@ -115,17 +120,21 @@ router.post('/verify-otp', async (req: Request<{ weddingId: string }>, res: Resp
       }
     }
 
-    if (savedGuest.email) {
-      sendConfirmationEmail({
+    const wedding = await WeddingModel.findById(weddingId);
+    const coupleEmail = wedding?.coupleEmail?.trim();
+
+    sendConfirmationEmail(
+      {
         name: savedGuest.name,
-        email: savedGuest.email,
+        email: savedGuest.email || '',
         attending: savedGuest.attending,
         numberOfGuests: savedGuest.numberOfGuests,
         message: savedGuest.message,
-      }).catch((err) => {
-        console.error('⚠️ Email failed (non-blocking):', err);
-      });
-    }
+      },
+      { coupleEmail: coupleEmail || undefined }
+    ).catch((err) => {
+      console.error('⚠️ Email failed (non-blocking):', err);
+    });
 
     return res.status(201).json(savedGuest);
   } catch (error) {
@@ -134,7 +143,7 @@ router.post('/verify-otp', async (req: Request<{ weddingId: string }>, res: Resp
     const isDev = false;
     return res.status(500).json({
       error: 'Failed to confirm RSVP',
-      ...(isDev && { debug: err.message }),
+      ...(isDev ? { debug: err.message } : {}),
     });
   }
 });

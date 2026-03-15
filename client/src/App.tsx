@@ -8,6 +8,7 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { CreateWeddingPage } from './pages/CreateWeddingPage';
 import { EditWeddingPage } from './pages/EditWeddingPage';
 import { WeddingGuestsPage } from './pages/WeddingGuestsPage';
+import { WeddingDashboardPage } from './pages/WeddingDashboardPage';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Routes>
           <Route path="/" element={<NotFoundPage />} />
           <Route path="/wedding/:id" element={<WeddingPage />} />
+          <Route path="/wedding/:id/dashboard" element={<WeddingDashboardPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin/create" element={<CreateWeddingPage />} />

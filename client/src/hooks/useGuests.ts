@@ -146,6 +146,7 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
       Attending:
         guest.attending === 'yes' ? 'Yes' : guest.attending === 'no' ? 'No' : 'Maybe',
       'Number of Guests': guest.numberOfGuests || 1,
+      'Guest Names': guest.guestNames?.length ? guest.guestNames.join(', ') : '',
       Message: guest.message || '',
       'Submitted At': guest.submittedAt
         ? new Date(guest.submittedAt).toLocaleString()
@@ -153,12 +154,12 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
     }));
 
     const statsRows = [
-      { '#': '', Name: '', Email: '', Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
-      { '#': '', Name: 'Total RSVPs', Email: stats.totalGuests, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
-      { '#': '', Name: 'Attending', Email: stats.attending, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
-      { '#': '', Name: 'Not Attending', Email: stats.notAttending, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
-      { '#': '', Name: 'Maybe', Email: stats.pending, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
-      { '#': '', Name: 'Total Guests Attending', Email: stats.totalGuestsAttending, Phone: '', Attending: '', 'Number of Guests': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: '', Email: '', Phone: '', Attending: '', 'Number of Guests': '', 'Guest Names': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Total RSVPs', Email: stats.totalGuests, Phone: '', Attending: '', 'Number of Guests': '', 'Guest Names': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Attending', Email: stats.attending, Phone: '', Attending: '', 'Number of Guests': '', 'Guest Names': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Not Attending', Email: stats.notAttending, Phone: '', Attending: '', 'Number of Guests': '', 'Guest Names': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Maybe', Email: stats.pending, Phone: '', Attending: '', 'Number of Guests': '', 'Guest Names': '', Message: '', 'Submitted At': '' },
+      { '#': '', Name: 'Total Guests Attending', Email: stats.totalGuestsAttending, Phone: '', Attending: '', 'Number of Guests': '', 'Guest Names': '', Message: '', 'Submitted At': '' },
     ];
 
     const exportData = [...guestRows, ...statsRows];

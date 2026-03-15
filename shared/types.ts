@@ -5,6 +5,7 @@ export interface Guest {
   phone?: string;
   attending: 'yes' | 'no' | 'maybe';
   numberOfGuests: number;
+  guestNames?: string[];
   dietaryRestrictions?: string;
   message?: string;
   submittedAt: string;
@@ -22,6 +23,7 @@ export interface Wedding {
   createdAt: string;
 
   coupleNames: string;
+  coupleEmail?: string;
   inviteText: string;
   weddingDate: string;
   welcomeSubtext?: string;
@@ -36,6 +38,11 @@ export interface Wedding {
 
   rsvpDeadline?: string;
 
+  /** Payment: 'whish' = Whish app (phone number), 'bank' = wedding bank account */
+  paymentType?: 'whish' | 'bank';
+  paymentWhishPhone?: string;
+  paymentBankAccount?: string;
+
   slides: SlideImage[];
 
   musicUrl?: string;
@@ -47,6 +54,7 @@ export interface Wedding {
 export const DEFAULT_WEDDING: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> = {
   name: '',
   coupleNames: '',
+  coupleEmail: '',
   inviteText: 'are getting married',
   weddingDate: '',
   welcomeSubtext: "Click to get started and enjoy the celebration! We can't wait to share this special day with you.",
@@ -58,6 +66,9 @@ export const DEFAULT_WEDDING: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> = 
   quoteText: "Two souls with but a single thought, two hearts that beat as one.",
   quoteAuthor: 'John Keats',
   rsvpDeadline: '',
+  paymentType: undefined,
+  paymentWhishPhone: '',
+  paymentBankAccount: '',
   slides: [
     { url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&h=800&fit=crop', caption: 'The day we said yes...' },
     { url: 'https://images.unsplash.com/photo-1529634806980-85c3dd6d34ac?w=1200&h=800&fit=crop', caption: 'Our journey together' },
