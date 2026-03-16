@@ -12,18 +12,22 @@ export const WeddingDetails = () => {
       icon: Calendar,
       title: 'Date',
       info: wedding.dateFull,
+      subInfo: undefined as string | undefined,
+      locationUrl: undefined as string | undefined,
     },
     {
       icon: Clock,
       title: 'Time',
       info: wedding.ceremonyTime,
       subInfo: wedding.ceremonyLocation,
+      locationUrl: wedding.ceremonyLocationUrl || undefined,
     },
     {
       icon: MapPin,
       title: 'Venue',
       info: wedding.venueName,
       subInfo: wedding.venueAddress,
+      locationUrl: wedding.venueLocationUrl || undefined,
     },
   ];
 
@@ -79,6 +83,16 @@ export const WeddingDetails = () => {
                   <p className="font-cormorant text-lg text-charcoal/60 italic">
                     {detail.subInfo}
                   </p>
+                )}
+                {detail.locationUrl && (
+                  <a
+                    href={detail.locationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-4 font-montserrat text-xs tracking-widest text-gold uppercase underline underline-offset-4 hover:text-gold/70 transition-colors"
+                  >
+                    Get Directions
+                  </a>
                 )}
 
                 <div className="absolute top-4 left-4 w-6 h-6 border-l border-t border-gold/30 opacity-0 group-hover:opacity-100 transition-opacity" />

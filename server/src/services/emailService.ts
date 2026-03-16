@@ -1,7 +1,7 @@
 import * as nodemailer from 'nodemailer';
 
-const EMAIL_USER = 'compile.webtech@gmail.com';
-const EMAIL_PASS = 'oqmptqmxevaizigl';
+const EMAIL_USER = process.env.EMAIL_USER || '';
+const EMAIL_PASS = process.env.EMAIL_PASS || '';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -66,12 +66,11 @@ export async function sendConfirmationEmail(
   `;
 
   const coupleEmail = options?.coupleEmail?.trim();
-  const recipient = coupleEmail || EMAIL_USER;
-  if (recipient) {
+  if (coupleEmail) {
     try {
       await transporter.sendMail({
         from: `"Wedding RSVP" <${EMAIL_USER}>`,
-        to: recipient,
+        to: coupleEmail,
         subject,
         html,
       });

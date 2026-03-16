@@ -54,17 +54,18 @@ export const OtpModel = {
     }
     const docId = docIdFromEmail(email);
     const docRef = getOtpCollection(weddingId).doc(docId);
-    const doc = await docRef.get();
-    if (!doc.exists) return null;
+    return db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      if (!doc.exists) return null;
 
-    const data = doc.data();
-    if (!data || data.otp !== otp) return null;
+      const data = doc.data();
+      if (!data || data.otp !== otp) return null;
 
-    const expiresAt = data.expiresAt?.toDate?.() ?? new Date(0);
-    if (expiresAt < new Date()) return null;
+      const expiresAt = data.expiresAt?.toDate?.() ?? new Date(0);
+      if (expiresAt < new Date()) return null;
 
-    const guestData = data.guestData as Record<string, unknown>;
-    await docRef.delete();
-    return guestData;
+      transaction.delete(docRef);
+      return data.guestData as Record<string, unknown>;
+    });
   },
 };

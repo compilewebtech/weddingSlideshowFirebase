@@ -58,7 +58,7 @@ export const Footer = () => {
 
           <div className="mt-12 pt-8 border-t border-white/10">
             <p className="font-montserrat text-xs text-white/40 tracking-wider">
-              © {new Date().getFullYear()} {wedding.coupleNames} Wedding • Designed with love and care
+              © {new Date().getFullYear()} {wedding.coupleNames} Wedding • Designed by Compile
             </p>
           </div>
         </motion.div>

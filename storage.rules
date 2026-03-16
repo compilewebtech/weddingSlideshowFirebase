@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Public read so guests can view slideshow images without auth
+    match /{allPaths=**} {
+      allow read: if true;
+    }
+    // Only authenticated admins can upload/delete wedding slides
+    match /wedding-slides/{rest=**} {
+      allow write: if request.auth != null;
+    }
+  }
+}

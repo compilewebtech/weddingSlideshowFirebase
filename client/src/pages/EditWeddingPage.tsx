@@ -5,7 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useWedding } from '../hooks/useWeddings';
 import { updateWedding, deleteWedding } from '../services/weddingService';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { Wedding, SlideImage } from '../types';
+import { SlideUploader } from '../components/SlideUploader';
+import type { Wedding } from '../types';
 
 export function EditWeddingPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,24 +29,6 @@ export function EditWeddingPage() {
 
   const update = (key: keyof Wedding, value: unknown) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const addSlide = () => {
-    const slides = form.slides || [];
-    update('slides', [...slides, { url: '', caption: '' }]);
-  };
-
-  const updateSlide = (i: number, field: keyof SlideImage, value: string) => {
-    const slides = [...(form.slides || [])];
-    slides[i] = { ...slides[i], [field]: value };
-    update('slides', slides);
-  };
-
-  const removeSlide = (i: number) => {
-    update(
-      'slides',
-      (form.slides || []).filter((_, idx) => idx !== i)
-    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -219,6 +202,18 @@ export function EditWeddingPage() {
               </div>
               <div>
                 <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
+                  Ceremony Location URL (Google Maps)
+                </label>
+                <input
+                  type="url"
+                  value={form.ceremonyLocationUrl || ''}
+                  onChange={(e) => update('ceremonyLocationUrl', e.target.value)}
+                  className="w-full px-4 py-3 border border-charcoal/20"
+                  placeholder="https://maps.google.com/..."
+                />
+              </div>
+              <div>
+                <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
                   Venue Name
                 </label>
                 <input
@@ -235,6 +230,18 @@ export function EditWeddingPage() {
                   value={form.venueAddress || ''}
                   onChange={(e) => update('venueAddress', e.target.value)}
                   className="w-full px-4 py-3 border border-charcoal/20"
+                />
+              </div>
+              <div>
+                <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
+                  Venue Location URL (Google Maps)
+                </label>
+                <input
+                  type="url"
+                  value={form.venueLocationUrl || ''}
+                  onChange={(e) => update('venueLocationUrl', e.target.value)}
+                  className="w-full px-4 py-3 border border-charcoal/20"
+                  placeholder="https://maps.google.com/..."
                 />
               </div>
             </div>
@@ -375,35 +382,14 @@ export function EditWeddingPage() {
           </section>
 
           <section className="bg-white p-6 rounded-lg border border-gold/20">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase">
-                Slideshow Images
-              </h2>
-              <button type="button" onClick={addSlide} className="text-gold font-montserrat text-sm hover:underline">
-                + Add Slide
-              </button>
-            </div>
-            <div className="space-y-4">
-              {(form.slides || []).map((slide, i) => (
-                <div key={i} className="flex gap-4 items-start p-4 bg-cream/50 rounded">
-                  <input
-                    value={slide.url}
-                    onChange={(e) => updateSlide(i, 'url', e.target.value)}
-                    placeholder="Image URL"
-                    className="flex-1 px-4 py-2 border border-charcoal/20 text-sm"
-                  />
-                  <input
-                    value={slide.caption}
-                    onChange={(e) => updateSlide(i, 'caption', e.target.value)}
-                    placeholder="Caption"
-                    className="flex-1 px-4 py-2 border border-charcoal/20 text-sm"
-                  />
-                  <button type="button" onClick={() => removeSlide(i)} className="text-red-600 text-sm">
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
+            <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
+              Slideshow Images
+            </h2>
+            <SlideUploader
+              slides={form.slides || []}
+              onChange={(slides) => update('slides', slides)}
+              uploadPath={`wedding-slides/${id}`}
+            />
           </section>
 
           <section className="bg-white p-6 rounded-lg border border-gold/20">

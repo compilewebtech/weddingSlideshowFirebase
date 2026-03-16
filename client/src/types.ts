@@ -28,8 +28,10 @@ export interface Wedding {
   dateFull: string;
   ceremonyTime: string;
   ceremonyLocation?: string;
+  ceremonyLocationUrl?: string;
   venueName: string;
   venueAddress: string;
+  venueLocationUrl?: string;
   quoteText?: string;
   quoteAuthor?: string;
   rsvpDeadline?: string;
