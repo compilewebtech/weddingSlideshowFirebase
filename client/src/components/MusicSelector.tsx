@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Play, Pause, Music } from 'lucide-react';
 import { MUSIC_TRACKS } from '../constants/wedding';
 
@@ -10,6 +10,13 @@ interface MusicSelectorProps {
 export function MusicSelector({ value, onChange }: MusicSelectorProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+  }, []);
 
   const togglePreview = (url: string) => {
     if (previewUrl === url) {
