@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { ChevronUp, ChevronDown, X, Upload, Image } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import { storage } from '../lib/firebase';
 import type { SlideImage } from '../types';
 
@@ -29,12 +30,19 @@ export function SlideUploader({ slides, onChange, uploadPath }: SlideUploaderPro
       const imageFiles = files.filter((f) => f.type.startsWith('image/'));
       if (!imageFiles.length) return;
 
-      imageFiles.forEach((file) => {
+      imageFiles.forEach(async (file) => {
         const localId = crypto.randomUUID();
         const uuid = crypto.randomUUID();
         const storagePath = `${uploadPath}/${uuid}-${file.name}`;
         const storageRef = ref(storage, storagePath);
-        const task = uploadBytesResumable(storageRef, file);
+
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        });
+
+        const task = uploadBytesResumable(storageRef, compressed);
 
         setUploading((prev) => [...prev, { localId, filename: file.name, progress: 0 }]);
 
