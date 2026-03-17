@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { ChevronUp, ChevronDown, X, Upload, Image } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { storage } from '../lib/firebase';
@@ -97,7 +97,16 @@ export function SlideUploader({ slides, onChange, uploadPath }: SlideUploaderPro
     onChange(next);
   };
 
-  const remove = (i: number) => onChange(slides.filter((_, idx) => idx !== i));
+  const remove = (i: number) => {
+    const url = slides[i].url;
+    if (url.startsWith('https://firebasestorage.googleapis.com')) {
+      try {
+        const pathMatch = new URL(url).pathname.match(/\/o\/(.+)/);
+        if (pathMatch) deleteObject(ref(storage, decodeURIComponent(pathMatch[1]))).catch(() => {});
+      } catch {}
+    }
+    onChange(slides.filter((_, idx) => idx !== i));
+  };
 
   return (
     <div className="space-y-4">

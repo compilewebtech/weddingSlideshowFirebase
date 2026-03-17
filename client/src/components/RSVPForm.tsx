@@ -13,6 +13,8 @@ export const RSVPForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [otp, setOtp] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -36,6 +38,7 @@ export const RSVPForm = () => {
       await sendOtp(wedding.id, { ...formData, guestNames, name: formData.guestNames[0]?.trim() || formData.name });
       setStep('otp');
       setOtp('');
+      setResendCooldown(60);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send verification code');
     } finally {
@@ -89,6 +92,31 @@ export const RSVPForm = () => {
     setStep('form');
     setError(null);
     setOtp('');
+  };
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  const handleResend = async () => {
+    if (!wedding?.id || resendCooldown > 0 || resending) return;
+    setResending(true);
+    setError(null);
+    try {
+      const guestNames =
+        formData.attending === 'no'
+          ? [formData.name.trim()].filter(Boolean)
+          : formData.guestNames.map((n) => n.trim()).filter(Boolean);
+      await sendOtp(wedding.id, { ...formData, guestNames, name: formData.guestNames[0]?.trim() || formData.name });
+      setOtp('');
+      setResendCooldown(60);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resend code');
+    } finally {
+      setResending(false);
+    }
   };
 
   const maxGuests = maxGuestsFromInvite ?? 5;
@@ -377,6 +405,20 @@ export const RSVPForm = () => {
                     <Send size={18} />
                     {loading ? 'Confirming...' : 'Confirm RSVP'}
                   </motion.button>
+                </div>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendCooldown > 0 || resending}
+                    className="font-montserrat text-xs text-charcoal/50 hover:text-gold disabled:text-charcoal/30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {resending
+                      ? 'Sending...'
+                      : resendCooldown > 0
+                      ? `Resend code in ${resendCooldown}s`
+                      : "Didn't receive it? Resend code"}
+                  </button>
                 </div>
               </div>
             </motion.form>
