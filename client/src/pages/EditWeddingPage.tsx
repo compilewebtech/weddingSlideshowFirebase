@@ -6,6 +6,7 @@ import { useWedding } from '../hooks/useWeddings';
 import { updateWedding, deleteWedding } from '../services/weddingService';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { SlideUploader } from '../components/SlideUploader';
+import { MusicSelector } from '../components/MusicSelector';
 import type { Wedding } from '../types';
 
 export function EditWeddingPage() {
@@ -396,10 +397,9 @@ export function EditWeddingPage() {
             <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
               Music
             </h2>
-            <input
+            <MusicSelector
               value={form.musicUrl || ''}
-              onChange={(e) => update('musicUrl', e.target.value)}
-              className="w-full px-4 py-3 border border-charcoal/20"
+              onChange={(url) => update('musicUrl', url)}
             />
           </section>
 

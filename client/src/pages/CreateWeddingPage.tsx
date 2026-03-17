@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { createWedding } from '../services/weddingService';
 import { DEFAULT_WEDDING } from '../constants/wedding';
 import { SlideUploader } from '../components/SlideUploader';
+import { MusicSelector } from '../components/MusicSelector';
 import type { Wedding } from '../types';
 
 export function CreateWeddingPage() {
@@ -399,11 +400,9 @@ export function CreateWeddingPage() {
             <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
               Music
             </h2>
-            <input
+            <MusicSelector
               value={form.musicUrl || ''}
-              onChange={(e) => update('musicUrl', e.target.value)}
-              placeholder="/path/to/music.mp3"
-              className="w-full px-4 py-3 border border-charcoal/20"
+              onChange={(url) => update('musicUrl', url)}
             />
           </section>
 

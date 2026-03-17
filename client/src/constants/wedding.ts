@@ -1,5 +1,33 @@
 import type { Wedding } from '../types';
 
+export const MUSIC_TRACKS = [
+  {
+    url: '/A Sky Full of Stars Coldplay violin cover.mp3',
+    label: 'A Sky Full of Stars',
+    artist: 'Coldplay — Violin Cover',
+  },
+  {
+    url: '/What About Us.mp3',
+    label: 'What About Us',
+    artist: 'Pink',
+  },
+  {
+    url: '/The Night We Met (Bridgerton) - Emotional Piano Cover.mp3',
+    label: 'The Night We Met',
+    artist: 'Bridgerton — Emotional Piano Cover',
+  },
+  {
+    url: '/Birds of a Feather.mp3',
+    label: 'Birds of a Feather',
+    artist: 'Billie Eilish',
+  },
+  {
+    url: '/Ordinary (Bridgerton Version) Orchestral Cover.mp3',
+    label: 'Ordinary',
+    artist: 'Bridgerton — Orchestral Cover',
+  },
+];
+
 export const DEFAULT_WEDDING: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> = {
   name: '',
   coupleNames: '',
