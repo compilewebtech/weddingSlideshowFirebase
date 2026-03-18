@@ -4,6 +4,7 @@ import { decodeInviteParams } from '../utils/inviteLink';
 import { AnimatePresence } from 'framer-motion';
 import { WelcomeScreen } from '../components/WelcomeScreen';
 import { Slideshow } from '../components/Slideshow';
+import { Countdown } from '../components/Countdown';
 import { WeddingDetails } from '../components/WeddingDetails';
 import { WeddingPayment } from '../components/WeddingPayment';
 import { RSVPForm } from '../components/RSVPForm';
@@ -70,6 +71,19 @@ function WeddingContent() {
             <MusicControl isPlaying={isPlaying} onToggle={toggle} />
             <main>
               <Slideshow />
+              {wedding.countdownDate && (
+                <section className="py-20 px-4 bg-cream relative overflow-hidden">
+                  <div className="max-w-4xl mx-auto text-center">
+                    <span className="font-montserrat text-xs tracking-[0.3em] text-gold uppercase">
+                      Counting Down To
+                    </span>
+                    <h2 className="font-script text-4xl md:text-6xl text-charcoal mt-4 mb-10">
+                      Our Special Day
+                    </h2>
+                    <Countdown targetDate={wedding.countdownDate} variant="light" />
+                  </div>
+                </section>
+              )}
               <WeddingDetails />
               <WeddingPayment />
               <RSVPForm />

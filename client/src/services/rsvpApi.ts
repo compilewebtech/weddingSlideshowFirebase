@@ -47,6 +47,17 @@ export async function sendOtp(weddingId: string, data: RsvpFormData): Promise<vo
   }
 }
 
+export async function resetOtp(weddingId: string, email: string): Promise<void> {
+  const res = await rsvpFetch(apiPath(`/weddings/${weddingId}/guests/reset-otp/${encodeURIComponent(email)}`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.error || 'Failed to reset OTP');
+  }
+}
+
 export async function verifyOtp(
   weddingId: string,
   email: string,

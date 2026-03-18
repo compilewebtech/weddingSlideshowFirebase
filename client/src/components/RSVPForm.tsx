@@ -15,6 +15,7 @@ export const RSVPForm = () => {
   const [otp, setOtp] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resending, setResending] = useState(false);
+  const [resendUsed, setResendUsed] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -101,7 +102,7 @@ export const RSVPForm = () => {
   }, [resendCooldown]);
 
   const handleResend = async () => {
-    if (!wedding?.id || resendCooldown > 0 || resending) return;
+    if (!wedding?.id || resendCooldown > 0 || resending || resendUsed) return;
     setResending(true);
     setError(null);
     try {
@@ -112,6 +113,7 @@ export const RSVPForm = () => {
       await sendOtp(wedding.id, { ...formData, guestNames, name: formData.guestNames[0]?.trim() || formData.name });
       setOtp('');
       setResendCooldown(60);
+      setResendUsed(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resend code');
     } finally {
@@ -410,10 +412,12 @@ export const RSVPForm = () => {
                   <button
                     type="button"
                     onClick={handleResend}
-                    disabled={resendCooldown > 0 || resending}
+                    disabled={resendCooldown > 0 || resending || resendUsed}
                     className="font-montserrat text-xs text-charcoal/50 hover:text-gold disabled:text-charcoal/30 disabled:cursor-not-allowed transition-colors"
                   >
-                    {resending
+                    {resendUsed
+                      ? 'Code resent — check your inbox or spam folder'
+                      : resending
                       ? 'Sending...'
                       : resendCooldown > 0
                       ? `Resend code in ${resendCooldown}s`

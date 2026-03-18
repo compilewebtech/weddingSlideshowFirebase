@@ -10,9 +10,11 @@ import {
   HelpCircle,
   Eye,
   EyeOff,
+  RefreshCw,
 } from 'lucide-react';
 import { useWedding } from '../hooks/useWeddings';
 import { useGuests } from '../hooks/useGuests';
+import { resetOtp } from '../services/rsvpApi';
 import { WeddingProvider } from '../contexts/WeddingContext';
 import { useAuth } from '../contexts/AuthContext';
 import { hashPassword } from '../utils/password';
@@ -31,6 +33,23 @@ function DashboardContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [checking, setChecking] = useState(false);
+  const [resettingEmail, setResettingEmail] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+
+  const handleResetOtp = async (email: string) => {
+    if (!id || !email || resettingEmail) return;
+    setResettingEmail(email);
+    setResetSuccess(null);
+    try {
+      await resetOtp(id, email);
+      setResetSuccess(email);
+      setTimeout(() => setResetSuccess(null), 3000);
+    } catch (err) {
+      console.error('Reset OTP failed:', err);
+    } finally {
+      setResettingEmail(null);
+    }
+  };
 
   const isCreator = user && wedding?.createdBy === user.uid;
   const hasPasswordAuth = wedding?.id && isWeddingAuthenticated(wedding.id);
@@ -225,12 +244,15 @@ function DashboardContent() {
                   <th className="px-4 py-3 text-center font-montserrat text-xs uppercase text-charcoal/70">Guests</th>
                   <th className="px-4 py-3 text-left font-montserrat text-xs uppercase text-charcoal/70">Guest Names</th>
                   <th className="px-4 py-3 text-left font-montserrat text-xs uppercase text-charcoal/70">Message</th>
+                  {isCreator && (
+                    <th className="px-4 py-3 text-center font-montserrat text-xs uppercase text-charcoal/70">OTP</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {guests.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-charcoal/50 font-cormorant italic">
+                    <td colSpan={isCreator ? 7 : 6} className="px-4 py-12 text-center text-charcoal/50 font-cormorant italic">
                       No RSVPs yet
                     </td>
                   </tr>
@@ -259,6 +281,22 @@ function DashboardContent() {
                       <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs truncate">
                         {guest.message || '-'}
                       </td>
+                      {isCreator && (
+                        <td className="px-4 py-3 text-center">
+                          {resetSuccess === guest.email ? (
+                            <span className="text-green-600 font-montserrat text-xs">+1 granted</span>
+                          ) : (
+                            <button
+                              onClick={() => guest.email && handleResetOtp(guest.email)}
+                              disabled={resettingEmail === guest.email || !guest.email}
+                              className="text-charcoal/40 hover:text-gold disabled:opacity-30 transition-colors"
+                              title="Grant 1 more OTP attempt"
+                            >
+                              <RefreshCw size={14} className={resettingEmail === guest.email ? 'animate-spin' : ''} />
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}

@@ -245,6 +245,20 @@ export function EditWeddingPage() {
                   placeholder="https://maps.google.com/..."
                 />
               </div>
+              <div>
+                <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
+                  Countdown Date
+                </label>
+                <input
+                  type="date"
+                  value={form.countdownDate || ''}
+                  onChange={(e) => update('countdownDate' as keyof Wedding, e.target.value)}
+                  className="w-full px-4 py-3 border border-charcoal/20"
+                />
+                <p className="mt-1 font-montserrat text-xs text-charcoal/50">
+                  A live countdown timer will display on the invitation.
+                </p>
+              </div>
             </div>
           </section>
 

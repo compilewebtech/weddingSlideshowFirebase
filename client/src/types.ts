@@ -20,6 +20,7 @@ export interface Wedding {
   name: string;
   createdBy: string;
   createdAt: string;
+  countdownDate?: string;
   coupleNames: string;
   coupleEmail?: string;
   inviteText: string;

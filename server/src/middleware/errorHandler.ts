@@ -3,11 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction) {
   console.error('❌ Unhandled error:', err.message);
 
-  const origin = req.get('Origin');
-  if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
+  // CORS headers are already set by the upstream middleware — don't echo arbitrary origins here
 
   res.status(500).json({
     error: 'Internal server error',

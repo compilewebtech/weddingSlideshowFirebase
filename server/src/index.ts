@@ -23,9 +23,7 @@ const allowedOrigins = [
 function isAllowedOrigin(origin: string | undefined): boolean {
   if (!origin) return true;
   const normalized = origin.replace(/\/$/, '');
-  if (allowedOrigins.includes(normalized)) return true;
-  if (normalized.startsWith('http://localhost:') || normalized.startsWith('http://127.0.0.1:')) return true;
-  return false;
+  return allowedOrigins.includes(normalized);
 }
 
 app.use((req, res, next) => {

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { GuestModel } from '../models/Guest';
 import { OtpModel } from '../models/OtpCode';
 import { WeddingModel } from '../models/Wedding';
@@ -6,9 +7,33 @@ import { validateGuest } from '../middleware/validation';
 import { sendConfirmationEmail, sendOtpEmail } from '../services/emailService';
 
 const router = Router({ mergeParams: true });
+const db = getFirestore();
+
+const RATE_LIMIT_MAX = 2;
+const RATE_LIMIT_WINDOW_MS = 365 * 24 * 60 * 60 * 1000; // effectively permanent
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function checkOtpRateLimit(weddingId: string, email: string): Promise<boolean> {
+  const docId = email.replace(/[^a-z0-9]/g, '_');
+  const ref = db.collection('weddings').doc(weddingId).collection('otpRateLimits').doc(docId);
+  const doc = await ref.get();
+
+  const now = Date.now();
+  if (doc.exists) {
+    const data = doc.data()!;
+    const windowStart = data.windowStart?.toDate?.()?.getTime() ?? 0;
+    if (now - windowStart < RATE_LIMIT_WINDOW_MS) {
+      if ((data.count || 0) >= RATE_LIMIT_MAX) return false; // blocked
+      await ref.update({ count: (data.count || 0) + 1 });
+      return true;
+    }
+  }
+  // New window
+  await ref.set({ count: 1, windowStart: Timestamp.fromDate(new Date(now)) });
+  return true;
 }
 
 router.post('/send-otp', validateGuest, async (req: Request<{ weddingId: string }>, res: Response) => {
@@ -31,6 +56,11 @@ router.post('/send-otp', validateGuest, async (req: Request<{ weddingId: string 
       } else {
         throw e;
       }
+    }
+
+    const allowed = await checkOtpRateLimit(weddingId, email);
+    if (!allowed) {
+      return res.status(429).json({ error: 'You have used all verification attempts for this email. Please check your inbox and spam folder.' });
     }
 
     const guestData: Record<string, unknown> = {
@@ -156,6 +186,25 @@ router.get('/', async (req: Request<{ weddingId: string }>, res: Response) => {
   } catch (error) {
     console.error('Error fetching guests:', error);
     return res.status(500).json({ error: 'Failed to fetch guests' });
+  }
+});
+
+router.post('/reset-otp/:email', async (req: Request<{ weddingId: string; email: string }>, res: Response) => {
+  try {
+    const { weddingId, email } = req.params;
+    const normalizedEmail = email.trim().toLowerCase();
+    const docId = normalizedEmail.replace(/[^a-z0-9]/g, '_');
+    const ref = db.collection('weddings').doc(weddingId).collection('otpRateLimits').doc(docId);
+    const doc = await ref.get();
+    if (!doc.exists) {
+      return res.json({ message: 'No rate limit found for this email' });
+    }
+    // Grant exactly 1 more attempt
+    await ref.update({ count: RATE_LIMIT_MAX - 1 });
+    return res.json({ message: 'OTP reset — guest can request 1 more code' });
+  } catch (error) {
+    console.error('Error resetting OTP:', error);
+    return res.status(500).json({ error: 'Failed to reset OTP' });
   }
 });
 

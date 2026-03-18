@@ -1,5 +1,6 @@
-import { collection, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { collection, addDoc, doc, getDoc, updateDoc, deleteDoc, getDocs, serverTimestamp } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
+import { db, storage } from '../lib/firebase';
 import { hashPassword } from '../utils/password';
 import type { Wedding } from '../types';
 
@@ -43,8 +44,34 @@ export async function updateWedding(
 }
 
 export async function deleteWedding(weddingId: string): Promise<void> {
+  // Delete uploaded slide photos from Storage
+  const weddingDoc = await getDoc(doc(db, 'weddings', weddingId));
+  if (weddingDoc.exists()) {
+    const slides = weddingDoc.data()?.slides as { url: string }[] | undefined;
+    if (slides?.length) {
+      await Promise.all(
+        slides
+          .filter((s) => s.url.startsWith('https://firebasestorage.googleapis.com'))
+          .map((s) => {
+            try {
+              const pathMatch = new URL(s.url).pathname.match(/\/o\/(.+)/);
+              if (pathMatch) return deleteObject(ref(storage, decodeURIComponent(pathMatch[1]))).catch(() => {});
+            } catch {}
+            return Promise.resolve();
+          })
+      );
+    }
+  }
+
+  // Delete guests subcollection
   const guestsRef = collection(db, 'weddings', weddingId, 'guests');
   const guestsSnap = await getDocs(guestsRef);
   await Promise.all(guestsSnap.docs.map((d) => deleteDoc(d.ref)));
+
+  // Delete OTP rate limits subcollection
+  const rateLimitsRef = collection(db, 'weddings', weddingId, 'otpRateLimits');
+  const rateLimitsSnap = await getDocs(rateLimitsRef);
+  await Promise.all(rateLimitsSnap.docs.map((d) => deleteDoc(d.ref)));
+
   await deleteDoc(doc(db, 'weddings', weddingId));
 }
