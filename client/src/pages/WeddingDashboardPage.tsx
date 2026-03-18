@@ -33,21 +33,21 @@ function DashboardContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [checking, setChecking] = useState(false);
-  const [resettingEmail, setResettingEmail] = useState<string | null>(null);
-  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [manualResetEmail, setManualResetEmail] = useState('');
+  const [manualResetStatus, setManualResetStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  const handleResetOtp = async (email: string) => {
-    if (!id || !email || resettingEmail) return;
-    setResettingEmail(email);
-    setResetSuccess(null);
+  const handleManualReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = manualResetEmail.trim().toLowerCase();
+    if (!id || !email) return;
+    setManualResetStatus('loading');
     try {
       await resetOtp(id, email);
-      setResetSuccess(email);
-      setTimeout(() => setResetSuccess(null), 3000);
-    } catch (err) {
-      console.error('Reset OTP failed:', err);
-    } finally {
-      setResettingEmail(null);
+      setManualResetStatus('success');
+      setTimeout(() => { setManualResetStatus('idle'); setManualResetEmail(''); }, 3000);
+    } catch {
+      setManualResetStatus('error');
+      setTimeout(() => setManualResetStatus('idle'), 3000);
     }
   };
 
@@ -223,15 +223,37 @@ function DashboardContent() {
           </div>
         </div>
 
-        <motion.button
-          onClick={exportToExcel}
-          className="mb-6 flex items-center gap-3 px-6 py-3 bg-green-600 text-white rounded-lg font-montserrat text-sm hover:bg-green-700 transition-colors"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <FileSpreadsheet size={20} />
-          Export to Excel
-        </motion.button>
+        <div className="flex flex-wrap items-center gap-4 mb-6">
+          <motion.button
+            onClick={exportToExcel}
+            className="flex items-center gap-3 px-6 py-3 bg-green-600 text-white rounded-lg font-montserrat text-sm hover:bg-green-700 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <FileSpreadsheet size={20} />
+            Export to Excel
+          </motion.button>
+
+          {isCreator && (
+            <form onSubmit={handleManualReset} className="flex items-center gap-2">
+              <input
+                type="email"
+                value={manualResetEmail}
+                onChange={(e) => setManualResetEmail(e.target.value)}
+                placeholder="Guest email to reset OTP"
+                className="px-3 py-2.5 border border-charcoal/20 rounded-lg font-montserrat text-sm w-56"
+              />
+              <button
+                type="submit"
+                disabled={manualResetStatus === 'loading' || !manualResetEmail.trim()}
+                className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-lg font-montserrat text-sm hover:bg-gold/20 disabled:opacity-40 transition-colors flex items-center gap-2"
+              >
+                <RefreshCw size={14} className={manualResetStatus === 'loading' ? 'animate-spin' : ''} />
+                {manualResetStatus === 'success' ? '+1 granted' : manualResetStatus === 'error' ? 'Failed' : 'Reset OTP'}
+              </button>
+            </form>
+          )}
+        </div>
 
         <div className="bg-white border border-gold/20 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
@@ -244,15 +266,12 @@ function DashboardContent() {
                   <th className="px-4 py-3 text-center font-montserrat text-xs uppercase text-charcoal/70">Guests</th>
                   <th className="px-4 py-3 text-left font-montserrat text-xs uppercase text-charcoal/70">Guest Names</th>
                   <th className="px-4 py-3 text-left font-montserrat text-xs uppercase text-charcoal/70">Message</th>
-                  {isCreator && (
-                    <th className="px-4 py-3 text-center font-montserrat text-xs uppercase text-charcoal/70">OTP</th>
-                  )}
                 </tr>
               </thead>
               <tbody>
                 {guests.length === 0 ? (
                   <tr>
-                    <td colSpan={isCreator ? 7 : 6} className="px-4 py-12 text-center text-charcoal/50 font-cormorant italic">
+                    <td colSpan={6} className="px-4 py-12 text-center text-charcoal/50 font-cormorant italic">
                       No RSVPs yet
                     </td>
                   </tr>
@@ -281,22 +300,6 @@ function DashboardContent() {
                       <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs truncate">
                         {guest.message || '-'}
                       </td>
-                      {isCreator && (
-                        <td className="px-4 py-3 text-center">
-                          {resetSuccess === guest.email ? (
-                            <span className="text-green-600 font-montserrat text-xs">+1 granted</span>
-                          ) : (
-                            <button
-                              onClick={() => guest.email && handleResetOtp(guest.email)}
-                              disabled={resettingEmail === guest.email || !guest.email}
-                              className="text-charcoal/40 hover:text-gold disabled:opacity-30 transition-colors"
-                              title="Grant 1 more OTP attempt"
-                            >
-                              <RefreshCw size={14} className={resettingEmail === guest.email ? 'animate-spin' : ''} />
-                            </button>
-                          )}
-                        </td>
-                      )}
                     </tr>
                   ))
                 )}
