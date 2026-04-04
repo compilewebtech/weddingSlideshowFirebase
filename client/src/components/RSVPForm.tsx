@@ -1,64 +1,96 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Heart, Check, Mail, KeyRound } from 'lucide-react';
+import { Send, Heart, Check } from 'lucide-react';
 import { useWeddingContext } from '../contexts/WeddingContext';
-import { sendOtp, verifyOtp } from '../services/rsvpApi';
+import { submitDirectRsvp } from '../services/rsvpApi';
 
-type Step = 'form' | 'otp' | 'success';
+type Step = 'form' | 'success';
 
 export const RSVPForm = () => {
   const { wedding, maxGuestsFromInvite } = useWeddingContext();
   const [step, setStep] = useState<Step>('form');
-  const [showEmailNotification, setShowEmailNotification] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [resending, setResending] = useState(false);
-  const [resendUsed, setResendUsed] = useState(false);
+  const showEmail = wedding?.sendThankYou !== false;
+
+  // Multi-guest mode: invite link specifies exact number of guests
+  const isMultiGuest = maxGuestsFromInvite != null && maxGuestsFromInvite > 1;
+  const guestCount = maxGuestsFromInvite ?? 1;
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     attending: 'yes' as 'yes' | 'no' | 'maybe',
     numberOfGuests: 1,
     guestNames: [''] as string[],
+    guestAttending: ['yes'] as ('yes' | 'no')[],
     dietaryRestrictions: '',
     message: '',
   });
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // Initialize guest slots when invite link sets the count
+  useEffect(() => {
+    if (isMultiGuest) {
+      setFormData((prev) => {
+        const names = [...prev.guestNames];
+        const attending = [...prev.guestAttending];
+        while (names.length < guestCount) names.push('');
+        while (attending.length < guestCount) attending.push('yes');
+        names.length = guestCount;
+        attending.length = guestCount;
+        return { ...prev, numberOfGuests: guestCount, guestNames: names, guestAttending: attending };
+      });
+    }
+  }, [isMultiGuest, guestCount]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!wedding?.id) return;
     setError(null);
     setLoading(true);
     try {
-      const guestNames =
-        formData.attending === 'no'
-          ? [formData.name.trim()].filter(Boolean)
-          : formData.guestNames.map((n) => n.trim()).filter(Boolean);
-      await sendOtp(wedding.id, { ...formData, guestNames, name: formData.guestNames[0]?.trim() || formData.name });
-      setStep('otp');
-      setOtp('');
-      setResendCooldown(60);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send verification code');
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (isMultiGuest) {
+        // Multi-guest: each guest has their own name + attending status
+        // Filter both arrays in sync — keep only slots where name is non-empty
+        const filtered = formData.guestNames
+          .map((n, i) => ({ name: n.trim(), attending: formData.guestAttending[i] }))
+          .filter((g) => g.name);
+        const guestNames = filtered.map((g) => g.name);
+        const guestAttending = filtered.map((g) => g.attending);
+        const allDeclined = guestAttending.every((a) => a === 'no');
+        const attendingCount = guestAttending.filter((a) => a === 'yes').length;
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!wedding?.id || !otp.trim()) return;
-    setError(null);
-    setLoading(true);
-    try {
-      await verifyOtp(wedding.id, formData.email, otp.trim());
+        await submitDirectRsvp(wedding.id, {
+          name: guestNames[0] || formData.name,
+          attending: allDeclined ? 'no' : 'yes',
+          numberOfGuests: attendingCount,
+          guestNames,
+          guestAttending,
+          email: showEmail && formData.email.trim() ? formData.email.trim() : undefined,
+          dietaryRestrictions: formData.dietaryRestrictions || undefined,
+          message: formData.message || undefined,
+        });
+      } else {
+        // Single guest: simple form
+        const guestNames =
+          formData.attending === 'no'
+            ? [formData.name.trim()].filter(Boolean)
+            : formData.guestNames.map((n) => n.trim()).filter(Boolean);
+        const name = formData.guestNames[0]?.trim() || formData.name;
+
+        await submitDirectRsvp(wedding.id, {
+          name,
+          attending: formData.attending,
+          numberOfGuests: formData.numberOfGuests,
+          guestNames,
+          email: showEmail && formData.email.trim() ? formData.email.trim() : undefined,
+          dietaryRestrictions: formData.dietaryRestrictions || undefined,
+          message: formData.message || undefined,
+        });
+      }
       setStep('success');
-      setShowEmailNotification(true);
-      setTimeout(() => setShowEmailNotification(false), 4000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to confirm RSVP');
+      setError(err instanceof Error ? err.message : 'Failed to submit RSVP');
     } finally {
       setLoading(false);
     }
@@ -68,17 +100,7 @@ export const RSVPForm = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    if (name === 'numberOfGuests') {
-      const num = parseInt(value);
-      setFormData((prev) => {
-        const newGuestNames = [...prev.guestNames];
-        while (newGuestNames.length < num) newGuestNames.push('');
-        newGuestNames.length = num;
-        return { ...prev, numberOfGuests: num, guestNames: newGuestNames, name: newGuestNames[0] ?? prev.name };
-      });
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const setGuestName = (index: number, value: string) => {
@@ -89,74 +111,16 @@ export const RSVPForm = () => {
     });
   };
 
-  const handleBackToForm = () => {
-    setStep('form');
-    setError(null);
-    setOtp('');
-  };
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [resendCooldown]);
-
-  const handleResend = async () => {
-    if (!wedding?.id || resendCooldown > 0 || resending || resendUsed) return;
-    setResending(true);
-    setError(null);
-    try {
-      const guestNames =
-        formData.attending === 'no'
-          ? [formData.name.trim()].filter(Boolean)
-          : formData.guestNames.map((n) => n.trim()).filter(Boolean);
-      await sendOtp(wedding.id, { ...formData, guestNames, name: formData.guestNames[0]?.trim() || formData.name });
-      setOtp('');
-      setResendCooldown(60);
-      setResendUsed(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resend code');
-    } finally {
-      setResending(false);
-    }
-  };
-
-  const maxGuests = maxGuestsFromInvite ?? 5;
-  useEffect(() => {
+  const setGuestAttendance = (index: number, value: 'yes' | 'no') => {
     setFormData((prev) => {
-      const capped = Math.min(prev.numberOfGuests, maxGuests);
-      const newGuestNames = [...prev.guestNames];
-      while (newGuestNames.length < capped) newGuestNames.push('');
-      newGuestNames.length = capped;
-      return { ...prev, numberOfGuests: capped, guestNames: newGuestNames };
+      const next = [...prev.guestAttending];
+      next[index] = value;
+      return { ...prev, guestAttending: next };
     });
-  }, [maxGuests]);
+  };
 
   return (
     <section id="rsvp" className="py-24 px-4 bg-blush/30 relative overflow-hidden">
-      <AnimatePresence>
-        {showEmailNotification && (
-          <motion.div
-            className="fixed top-6 right-6 z-50 bg-white shadow-2xl rounded-lg p-4 flex items-center gap-3 border-l-4 border-gold"
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
-          >
-            <div className="w-10 h-10 bg-gold/10 rounded-full flex items-center justify-center">
-              <Mail className="text-gold" size={20} />
-            </div>
-            <div>
-              <p className="font-montserrat text-sm font-medium text-charcoal">
-                Email Notification Sent!
-              </p>
-              <p className="font-cormorant text-sm text-charcoal/60">
-                The couple has been notified of your RSVP
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="max-w-2xl mx-auto relative">
         <motion.div
           className="text-center mb-12"
@@ -182,7 +146,7 @@ export const RSVPForm = () => {
           {step === 'form' && (
             <motion.form
               key="form"
-              onSubmit={handleSendOtp}
+              onSubmit={handleSubmit}
               className="bg-white p-8 md:p-12 shadow-xl border border-gold/10"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -195,121 +159,158 @@ export const RSVPForm = () => {
                     {error}
                   </div>
                 )}
-                {formData.attending === 'no' && (
+
+                {showEmail && (
                   <div>
                     <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
-                      Your Name *
+                      Email Address
                     </label>
                     <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
+                      type="email"
+                      name="email"
+                      value={formData.email}
                       onChange={handleChange}
-                      required
                       className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg transition-all"
-                      placeholder="Enter your full name"
+                      placeholder="your@email.com"
                     />
                   </div>
                 )}
 
-                <div>
-                  <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg transition-all"
-                    placeholder="your@email.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
-                    Will you be attending? *
-                  </label>
-                  <div className="grid grid-cols-3 gap-4">
-                    {[
-                      { value: 'yes', label: 'Joyfully Accept' },
-                      { value: 'no', label: 'Regretfully Decline' },
-                      { value: 'maybe', label: 'Not Sure Yet' },
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => {
-                            const next = { ...prev, attending: option.value as 'yes' | 'no' | 'maybe' };
-                            if (next.attending !== 'no') {
-                              const n = next.numberOfGuests;
-                              const guestNames = [...next.guestNames];
-                              while (guestNames.length < n) guestNames.push('');
-                              guestNames.length = n;
-                              if (!guestNames[0] && prev.name) guestNames[0] = prev.name;
-                              next.guestNames = guestNames;
-                            } else if (prev.guestNames[0]) {
-                              next.name = prev.guestNames[0];
-                            }
-                            return next;
-                          })
-                        }
-                        className={`p-4 border transition-all text-center ${
-                          formData.attending === option.value
-                            ? 'border-gold bg-gold/10 text-gold'
-                            : 'border-charcoal/20 text-charcoal/70 hover:border-gold/50'
-                        }`}
-                      >
-                        <span className="font-cormorant text-sm">{option.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {formData.attending !== 'no' && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-4"
-                  >
-                    <div>
-                      <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
-                        Number of Guests (including yourself)
-                      </label>
-                      <select
-                        name="numberOfGuests"
-                        value={Math.min(formData.numberOfGuests, maxGuests)}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg"
-                      >
-                        {Array.from({ length: maxGuests }, (_, i) => i + 1).map((num) => (
-                          <option key={num} value={num}>
-                            {num} {num === 1 ? 'Guest' : 'Guests'}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                {isMultiGuest ? (
+                  /* ── Multi-guest mode: each person has name + accept/decline ── */
+                  <>
+                    <p className="font-cormorant text-lg text-charcoal/60 text-center italic">
+                      Please confirm attendance for each guest
+                    </p>
                     <div className="space-y-3">
-                      <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
-                        Names of all guests attending
-                      </label>
-                      {Array.from({ length: formData.numberOfGuests }, (_, i) => (
-                        <div key={i}>
-                          <input
-                            type="text"
-                            value={formData.guestNames[i] ?? ''}
-                            onChange={(e) => setGuestName(i, e.target.value)}
-                            required
-                            className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg transition-all"
-                            placeholder={i === 0 ? 'Your name' : `Guest ${i + 1} name`}
-                          />
+                      {Array.from({ length: guestCount }, (_, i) => (
+                        <div
+                          key={i}
+                          className={`p-5 border transition-all ${
+                            formData.guestAttending[i] === 'yes'
+                              ? 'border-gold/30 bg-gold/5'
+                              : formData.guestAttending[i] === 'no'
+                              ? 'border-charcoal/10 bg-charcoal/[0.02]'
+                              : 'border-charcoal/10'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="w-7 h-7 flex items-center justify-center rounded-full bg-gold/10 text-gold font-montserrat text-xs font-semibold">
+                              {i + 1}
+                            </span>
+                            <input
+                              type="text"
+                              value={formData.guestNames[i] ?? ''}
+                              onChange={(e) => setGuestName(i, e.target.value)}
+                              required
+                              className="flex-1 px-3 py-2 border-b border-charcoal/15 bg-transparent font-cormorant text-lg focus:border-gold focus:outline-none transition-colors"
+                              placeholder={i === 0 ? 'Your full name' : `Guest ${i + 1} full name`}
+                            />
+                          </div>
+                          <div className="flex gap-3 pl-10">
+                            <button
+                              type="button"
+                              onClick={() => setGuestAttendance(i, 'yes')}
+                              className={`flex-1 py-2 font-montserrat text-[10px] uppercase tracking-widest transition-all ${
+                                formData.guestAttending[i] === 'yes'
+                                  ? 'bg-gold text-white shadow-sm'
+                                  : 'border border-charcoal/15 text-charcoal/50 hover:border-gold/40 hover:text-gold'
+                              }`}
+                            >
+                              Joyfully Accept
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setGuestAttendance(i, 'no')}
+                              className={`flex-1 py-2 font-montserrat text-[10px] uppercase tracking-widest transition-all ${
+                                formData.guestAttending[i] === 'no'
+                                  ? 'bg-charcoal/70 text-white shadow-sm'
+                                  : 'border border-charcoal/15 text-charcoal/50 hover:border-charcoal/40'
+                              }`}
+                            >
+                              Regretfully Decline
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </motion.div>
+                  </>
+                ) : (
+                  /* ── Single guest mode: original form ── */
+                  <>
+                    {formData.attending === 'no' && (
+                      <div>
+                        <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
+                          Your Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          required
+                          className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg transition-all"
+                          placeholder="Enter your full name"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
+                        Will you be attending? *
+                      </label>
+                      <div className="grid grid-cols-3 gap-4">
+                        {[
+                          { value: 'yes', label: 'Joyfully Accept' },
+                          { value: 'no', label: 'Regretfully Decline' },
+                          { value: 'maybe', label: 'Not Sure Yet' },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => {
+                                const next = { ...prev, attending: option.value as 'yes' | 'no' | 'maybe' };
+                                if (next.attending !== 'no') {
+                                  if (!next.guestNames[0] && prev.name) {
+                                    const names = [...next.guestNames];
+                                    names[0] = prev.name;
+                                    next.guestNames = names;
+                                  }
+                                } else if (prev.guestNames[0]) {
+                                  next.name = prev.guestNames[0];
+                                }
+                                return next;
+                              })
+                            }
+                            className={`p-4 border transition-all text-center ${
+                              formData.attending === option.value
+                                ? 'border-gold bg-gold/10 text-gold'
+                                : 'border-charcoal/20 text-charcoal/70 hover:border-gold/50'
+                            }`}
+                          >
+                            <span className="font-cormorant text-sm">{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {formData.attending !== 'no' && (
+                      <div>
+                        <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
+                          Your Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.guestNames[0] ?? ''}
+                          onChange={(e) => setGuestName(0, e.target.value)}
+                          required
+                          className="w-full px-4 py-3 border border-charcoal/20 bg-transparent font-cormorant text-lg transition-all"
+                          placeholder="Your name"
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div>
@@ -347,83 +348,9 @@ export const RSVPForm = () => {
                   whileHover={!loading ? { scale: 1.01 } : {}}
                   whileTap={!loading ? { scale: 0.99 } : {}}
                 >
-                  <KeyRound size={18} />
-                  {loading ? 'Sending...' : 'Send Verification Code'}
+                  <Send size={18} />
+                  {loading ? 'Submitting...' : 'Submit RSVP'}
                 </motion.button>
-              </div>
-            </motion.form>
-          )}
-
-          {step === 'otp' && (
-            <motion.form
-              key="otp"
-              onSubmit={handleVerifyOtp}
-              className="bg-white p-8 md:p-12 shadow-xl border border-gold/10"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="grid gap-6">
-                {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 font-montserrat text-sm">
-                    {error}
-                  </div>
-                )}
-                <p className="font-cormorant text-lg text-charcoal/70 text-center">
-                  We sent a 6-digit verification code to <strong>{formData.email}</strong>.
-                  Please enter it below to confirm your RSVP.
-                </p>
-                <div>
-                  <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
-                    Verification Code *
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    placeholder="000000"
-                    className="w-full px-4 py-4 border border-charcoal/20 bg-transparent font-cormorant text-2xl text-center tracking-[0.5em] transition-all"
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <button
-                    type="button"
-                    onClick={handleBackToForm}
-                    className="flex-1 py-3 border border-charcoal/20 font-montserrat text-sm text-charcoal/70 hover:border-gold/50 transition-all"
-                  >
-                    Back
-                  </button>
-                  <motion.button
-                    type="submit"
-                    disabled={loading || otp.length !== 6}
-                    className="flex-1 py-4 btn-gold text-white font-montserrat text-sm tracking-widest uppercase flex items-center justify-center gap-3 disabled:opacity-60"
-                    whileHover={!loading && otp.length === 6 ? { scale: 1.01 } : {}}
-                    whileTap={!loading && otp.length === 6 ? { scale: 0.99 } : {}}
-                  >
-                    <Send size={18} />
-                    {loading ? 'Confirming...' : 'Confirm RSVP'}
-                  </motion.button>
-                </div>
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    disabled={resendCooldown > 0 || resending || resendUsed}
-                    className="font-montserrat text-xs text-charcoal/50 hover:text-gold disabled:text-charcoal/30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {resendUsed
-                      ? 'Code resent — check your inbox or spam folder'
-                      : resending
-                      ? 'Sending...'
-                      : resendCooldown > 0
-                      ? `Resend code in ${resendCooldown}s`
-                      : "Didn't receive it? Resend code"}
-                  </button>
-                </div>
               </div>
             </motion.form>
           )}

@@ -13,9 +13,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5001/wedding-invitation-slideshow/us-central1/api',
+        target: 'http://localhost:5001',
         changeOrigin: true,
-        pathRewrite: { '^/api': '' },
+        rewrite: (path: string) => path.replace(/^\/api/, '/wedding-invitation-slideshow/us-central1/api'),
       },
     },
   },

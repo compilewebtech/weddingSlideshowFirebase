@@ -60,4 +60,6 @@ export const DEFAULT_WEDDING: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> = 
   footerQuote: "I have found the one whom my soul loves.",
   footerQuoteAuthor: 'Song of Solomon 3:4',
   passwordHash: undefined,
+  package: 'silver',
+  sendThankYou: false,
 };

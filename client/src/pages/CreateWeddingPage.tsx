@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload, Crown, Star } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useAuth } from '../contexts/AuthContext';
 import { createWedding } from '../services/weddingService';
+import { uploadGuestExcel } from '../services/rsvpApi';
 import { DEFAULT_WEDDING } from '../constants/wedding';
 import { SlideUploader } from '../components/SlideUploader';
 import { MusicSelector } from '../components/MusicSelector';
@@ -24,6 +26,9 @@ export function CreateWeddingPage() {
     venueName: '',
     venueAddress: '',
   });
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [excelPreview, setExcelPreview] = useState<Array<{ firstName: string; lastName: string }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) navigate('/admin/login');
@@ -33,13 +38,54 @@ export function CreateWeddingPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleExcelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setExcelFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        const guests = rows
+          .filter((row, i) => {
+            if (i === 0) {
+              const first = String(row[0] || '').toLowerCase().trim();
+              if (first === 'first name' || first === 'firstname' || first === 'first') return false;
+            }
+            return row[0] && String(row[0]).trim();
+          })
+          .map((row) => ({
+            firstName: String(row[0]).trim(),
+            lastName: String(row[1] || '').trim(),
+          }));
+        setExcelPreview(guests);
+      } catch {
+        setError('Failed to read Excel file');
+        setExcelPreview([]);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || loading) return;
+    if (form.package === 'gold' && !excelFile) {
+      setError('Please upload a guest list Excel file for Gold package');
+      return;
+    }
     setError('');
     setLoading(true);
     try {
       const wedding = await createWedding(user.uid, form);
+      // If Gold, upload the Excel file after creating the wedding
+      if (form.package === 'gold' && excelFile) {
+        await uploadGuestExcel(wedding.id, excelFile);
+      }
       navigate(`/admin/wedding/${wedding.id}`);
     } catch (err: unknown) {
       const message =
@@ -71,6 +117,128 @@ export function CreateWeddingPage() {
             <div className="p-4 bg-red-50 text-red-700 font-montserrat text-sm rounded-lg border border-red-200" role="alert">
               {error}
             </div>
+          )}
+
+          {/* Package Selection */}
+          <section className="bg-white p-6 rounded-lg border border-gold/20">
+            <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
+              Package
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => { update('package', 'silver'); setExcelFile(null); setExcelPreview([]); }}
+                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  (form.package || 'silver') === 'silver'
+                    ? 'border-gold bg-gold/5'
+                    : 'border-charcoal/10 hover:border-charcoal/30'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Star size={20} className="text-charcoal/60" />
+                  <span className="font-montserrat text-sm font-semibold uppercase tracking-wider">Silver</span>
+                </div>
+                <p className="font-montserrat text-xs text-charcoal/60">
+                  Guests self-register via a shared invite link with OTP verification.
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => update('package', 'gold')}
+                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  form.package === 'gold'
+                    ? 'border-gold bg-gold/5'
+                    : 'border-charcoal/10 hover:border-charcoal/30'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Crown size={20} className="text-gold" />
+                  <span className="font-montserrat text-sm font-semibold uppercase tracking-wider">Gold</span>
+                </div>
+                <p className="font-montserrat text-xs text-charcoal/60">
+                  Upload guest list from Excel. Each guest/group gets a personalized RSVP link.
+                </p>
+              </button>
+            </div>
+          </section>
+
+          {/* Send Thank You Toggle */}
+          <section className="bg-white p-6 rounded-lg border border-gold/20">
+            <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
+              Thank You Notification
+            </h2>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.sendThankYou || false}
+                onChange={(e) => update('sendThankYou', e.target.checked)}
+                className="w-5 h-5 text-gold rounded"
+              />
+              <div>
+                <span className="font-montserrat text-sm">Send thank you email to guests after RSVP</span>
+                <p className="font-montserrat text-xs text-charcoal/50 mt-1">
+                  {form.package === 'gold'
+                    ? 'If enabled, guests will see an email field on the RSVP form.'
+                    : 'A thank you email will be sent after OTP verification.'}
+                </p>
+              </div>
+            </label>
+          </section>
+
+          {/* Gold: Excel Upload */}
+          {form.package === 'gold' && (
+            <section className="bg-white p-6 rounded-lg border border-gold/20">
+              <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
+                Guest List (Excel)
+              </h2>
+              <p className="font-montserrat text-xs text-charcoal/60 mb-4">
+                Upload an Excel file with two columns: <strong>First Name</strong> and <strong>Last Name</strong>.
+              </p>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 border border-gold text-gold rounded hover:bg-gold/5 font-montserrat text-sm"
+                >
+                  <Upload size={16} />
+                  {excelFile ? 'Change File' : 'Upload Excel'}
+                </button>
+                {excelFile && (
+                  <span className="font-montserrat text-xs text-charcoal/60">
+                    {excelFile.name} ({excelPreview.length} guests)
+                  </span>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleExcelChange}
+                  className="hidden"
+                />
+              </div>
+              {excelPreview.length > 0 && (
+                <div className="mt-4 max-h-48 overflow-y-auto border border-charcoal/10 rounded">
+                  <table className="w-full text-sm">
+                    <thead className="bg-cream sticky top-0">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-montserrat text-xs text-charcoal/60 uppercase">#</th>
+                        <th className="px-3 py-2 text-left font-montserrat text-xs text-charcoal/60 uppercase">First Name</th>
+                        <th className="px-3 py-2 text-left font-montserrat text-xs text-charcoal/60 uppercase">Last Name</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {excelPreview.map((g, i) => (
+                        <tr key={i} className="border-t border-charcoal/5">
+                          <td className="px-3 py-2 font-montserrat text-xs text-charcoal/40">{i + 1}</td>
+                          <td className="px-3 py-2 font-montserrat text-sm">{g.firstName}</td>
+                          <td className="px-3 py-2 font-montserrat text-sm">{g.lastName}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           )}
 
           <section className="bg-white p-6 rounded-lg border border-gold/20">

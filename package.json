@@ -18,5 +18,14 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "firebase": "^12.11.0",
+    "nvm": "^0.0.4",
+    "vite": "^8.0.1"
   }
 }

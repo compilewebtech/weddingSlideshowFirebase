@@ -1,4 +1,5 @@
-const API_URL = 'https://us-central1-wedding-invitation-slideshow.cloudfunctions.net/api';
+const isDev = import.meta.env.DEV;
+const API_URL = isDev ? '/api' : 'https://us-central1-wedding-invitation-slideshow.cloudfunctions.net/api';
 
 export function getAuthToken(): Promise<string | null> {
   return import('../lib/firebase').then(({ auth }) => {

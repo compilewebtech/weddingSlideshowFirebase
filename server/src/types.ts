@@ -25,4 +25,9 @@ export interface Wedding {
   musicUrl?: string;
   footerQuote?: string;
   footerQuoteAuthor?: string;
+
+  /** Package tier: 'silver' (default) or 'gold' */
+  package?: 'silver' | 'gold';
+  /** Whether to send thank-you email to guests after RSVP */
+  sendThankYou?: boolean;
 }

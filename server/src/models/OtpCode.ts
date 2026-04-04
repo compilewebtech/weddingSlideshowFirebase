@@ -2,6 +2,7 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 const db = getFirestore();
 const OTP_EXPIRY_MINUTES = 10;
+const MAX_VERIFY_ATTEMPTS = 5;
 const USE_IN_MEMORY = false;
 
 function docIdFromEmail(email: string): string {
@@ -59,10 +60,24 @@ export const OtpModel = {
       if (!doc.exists) return null;
 
       const data = doc.data();
-      if (!data || data.otp !== otp) return null;
+      if (!data) return null;
 
       const expiresAt = data.expiresAt?.toDate?.() ?? new Date(0);
-      if (expiresAt < new Date()) return null;
+      if (expiresAt < new Date()) {
+        transaction.delete(docRef);
+        return null;
+      }
+
+      const attempts = (data.verifyAttempts || 0) + 1;
+      if (attempts > MAX_VERIFY_ATTEMPTS) {
+        transaction.delete(docRef);
+        return null;
+      }
+
+      if (data.otp !== otp) {
+        transaction.update(docRef, { verifyAttempts: attempts });
+        return null;
+      }
 
       transaction.delete(docRef);
       return data.guestData as Record<string, unknown>;

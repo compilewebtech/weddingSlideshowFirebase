@@ -8,6 +8,7 @@ import { Countdown } from '../components/Countdown';
 import { WeddingDetails } from '../components/WeddingDetails';
 import { WeddingPayment } from '../components/WeddingPayment';
 import { RSVPForm } from '../components/RSVPForm';
+import { GoldRSVPForm } from '../components/GoldRSVPForm';
 import { MusicControl } from '../components/MusicControl';
 import { Footer } from '../components/Footer';
 import { useAudio } from '../hooks/useAudio';
@@ -18,8 +19,12 @@ function WeddingContent() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const { wedding, loading, error } = useWedding(id || null);
-  const inviteToken = searchParams.get('invite');
-  const inviteParams = inviteToken ? decodeInviteParams(inviteToken) : null;
+  const inviteParam = searchParams.get('invite') || undefined;
+  const isGold = (wedding?.package || 'silver') === 'gold';
+  // Silver: invite param is encoded invite params (maxGuests etc.)
+  // Gold: invite param is the guest token slug (e.g. "john-doe-a3f2")
+  const inviteParams = !isGold && inviteParam ? decodeInviteParams(inviteParam) : null;
+  const guestToken = isGold ? inviteParam : undefined;
   const [hasEntered, setHasEntered] = useState(false);
   const musicUrl = wedding?.musicUrl || '/A Sky Full of Stars Coldplay violin cover.mp3';
   const { isPlaying, toggle, play } = useAudio(musicUrl);
@@ -60,7 +65,7 @@ function WeddingContent() {
   }
 
   return (
-    <WeddingProvider wedding={wedding} maxGuestsFromInvite={inviteParams?.maxGuests}>
+    <WeddingProvider wedding={wedding} maxGuestsFromInvite={inviteParams?.maxGuests} guestToken={guestToken}>
       <div className="min-h-screen bg-cream">
         <AnimatePresence>
           {!hasEntered && <WelcomeScreen onEnter={handleEnter} />}
@@ -86,7 +91,21 @@ function WeddingContent() {
               )}
               <WeddingDetails />
               <WeddingPayment />
-              <RSVPForm />
+              {isGold && guestToken ? (
+                <section className="py-20 px-4" id="rsvp">
+                  <div className="max-w-xl mx-auto">
+                    <GoldRSVPForm />
+                  </div>
+                </section>
+              ) : isGold && !guestToken ? (
+                <section className="py-20 px-4 text-center" id="rsvp">
+                  <p className="font-montserrat text-sm text-charcoal/60">
+                    Please use your personalized invitation link to RSVP.
+                  </p>
+                </section>
+              ) : (
+                <RSVPForm />
+              )}
             </main>
             <Footer />
           </>

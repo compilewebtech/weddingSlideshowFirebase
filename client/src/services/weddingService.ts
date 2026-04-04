@@ -9,8 +9,12 @@ export async function createWedding(
   data: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'>
 ): Promise<Wedding> {
   const { password, passwordHash: _ph, ...rest } = data as Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> & { password?: string };
+  // Strip undefined values — Firestore rejects them
+  const clean = Object.fromEntries(
+    Object.entries(rest).filter(([, v]) => v !== undefined)
+  );
   const payload: Record<string, unknown> = {
-    ...rest,
+    ...clean,
     createdBy: userId,
     createdAt: serverTimestamp(),
   };
@@ -33,7 +37,9 @@ export async function updateWedding(
   userId: string,
   data: Partial<Omit<Wedding, 'id' | 'createdBy' | 'createdAt'>>
 ): Promise<void> {
-  const payload: Record<string, unknown> = { ...data };
+  const payload: Record<string, unknown> = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   if ('password' in data && typeof (data as { password?: string }).password === 'string') {
     const pw = (data as { password?: string }).password;
     payload.passwordHash = pw ? await hashPassword(pw) : null;
@@ -63,15 +69,17 @@ export async function deleteWedding(weddingId: string): Promise<void> {
     }
   }
 
-  // Delete guests subcollection
-  const guestsRef = collection(db, 'weddings', weddingId, 'guests');
-  const guestsSnap = await getDocs(guestsRef);
-  await Promise.all(guestsSnap.docs.map((d) => deleteDoc(d.ref)));
-
-  // Delete OTP rate limits subcollection
-  const rateLimitsRef = collection(db, 'weddings', weddingId, 'otpRateLimits');
-  const rateLimitsSnap = await getDocs(rateLimitsRef);
-  await Promise.all(rateLimitsSnap.docs.map((d) => deleteDoc(d.ref)));
+  // Delete subcollections (best-effort — don't block wedding deletion)
+  const subcollections = ['guests', 'otpRateLimits', 'otpCodes'];
+  for (const sub of subcollections) {
+    try {
+      const subRef = collection(db, 'weddings', weddingId, sub);
+      const subSnap = await getDocs(subRef);
+      await Promise.all(subSnap.docs.map((d) => deleteDoc(d.ref)));
+    } catch {
+      // Permission denied or empty — continue with deletion
+    }
+  }
 
   await deleteDoc(doc(db, 'weddings', weddingId));
 }

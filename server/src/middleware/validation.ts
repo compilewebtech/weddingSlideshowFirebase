@@ -33,6 +33,16 @@ export function validateGuest(req: Request, res: Response, next: NextFunction) {
     return res.status(400).json({ error: 'Message must be under 500 characters' });
   }
 
+  // Validate guestNames / guestAttending arrays
+  if (Array.isArray(req.body.guestNames)) {
+    if (req.body.guestNames.length > 10) {
+      return res.status(400).json({ error: 'Too many guests (max 10)' });
+    }
+    if (Array.isArray(req.body.guestAttending) && req.body.guestNames.length !== req.body.guestAttending.length) {
+      return res.status(400).json({ error: 'Guest names and attendance arrays must match in length' });
+    }
+  }
+
   req.body.name = req.body.name.trim();
   if (req.body.email) req.body.email = req.body.email.trim().toLowerCase();
   if (req.body.phone) req.body.phone = req.body.phone.trim();

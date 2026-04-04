@@ -3,12 +3,18 @@ export interface Guest {
   name: string;
   email?: string;
   phone?: string;
-  attending: 'yes' | 'no' | 'maybe';
+  attending: 'yes' | 'no' | 'maybe' | 'pending';
   numberOfGuests: number;
   guestNames?: string[];
   dietaryRestrictions?: string;
   message?: string;
   submittedAt: string;
+
+  /** Gold package fields */
+  firstName?: string;
+  lastName?: string;
+  groupId?: string;
+  guestToken?: string;
 }
 
 export interface SlideImage {
@@ -49,6 +55,11 @@ export interface Wedding {
 
   footerQuote?: string;
   footerQuoteAuthor?: string;
+
+  /** Package tier: 'silver' (default) or 'gold' */
+  package?: 'silver' | 'gold';
+  /** Whether to send thank-you email to guests after RSVP */
+  sendThankYou?: boolean;
 }
 
 export const DEFAULT_WEDDING: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> = {
@@ -80,4 +91,6 @@ export const DEFAULT_WEDDING: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> = 
   musicUrl: '/A Sky Full of Stars Coldplay violin cover.mp3',
   footerQuote: "I have found the one whom my soul loves.",
   footerQuoteAuthor: 'Song of Solomon 3:4',
+  package: 'silver',
+  sendThankYou: false,
 };

@@ -3,11 +3,19 @@ export interface Guest {
   name: string;
   email?: string;
   phone?: string;
-  attending: 'yes' | 'no' | 'maybe';
+  attending: 'yes' | 'no' | 'maybe' | 'pending';
   numberOfGuests: number;
   guestNames?: string[];
+  guestAttending?: ('yes' | 'no')[];
+  dietaryRestrictions?: string;
   message?: string;
   submittedAt: string;
+
+  /** Gold package fields */
+  firstName?: string;
+  lastName?: string;
+  groupId?: string;
+  guestToken?: string;
 }
 
 export interface SlideImage {
@@ -44,4 +52,9 @@ export interface Wedding {
   footerQuote?: string;
   footerQuoteAuthor?: string;
   passwordHash?: string;
+
+  /** Package tier: 'silver' (default) or 'gold' */
+  package?: 'silver' | 'gold';
+  /** Whether to send thank-you email to guests after RSVP */
+  sendThankYou?: boolean;
 }

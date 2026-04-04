@@ -3,6 +3,16 @@ import * as nodemailer from 'nodemailer';
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
 
+/** Escape HTML to prevent XSS in email templates */
+function esc(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -14,14 +24,14 @@ const transporter = nodemailer.createTransport({
 interface GuestEmail {
   name: string;
   email: string;
-  attending: 'yes' | 'no' | 'maybe';
+  attending: 'yes' | 'no' | 'maybe' | 'pending';
   numberOfGuests?: number;
   message?: string;
 }
 
 export async function sendConfirmationEmail(
   guest: GuestEmail,
-  options?: { coupleEmail?: string }
+  options?: { coupleEmail?: string; sendThankYou?: boolean }
 ): Promise<void> {
   if (!EMAIL_USER || !EMAIL_PASS) {
     console.warn('⚠️ Email credentials not configured, skipping email');
@@ -45,8 +55,8 @@ export async function sendConfirmationEmail(
         }
       </h2>
       <table style="width: 100%; border-collapse: collapse;">
-        <tr><td style="padding: 8px; font-weight: bold;">Name:</td><td style="padding: 8px;">${guest.name}</td></tr>
-        <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">${guest.email}</td></tr>
+        <tr><td style="padding: 8px; font-weight: bold;">Name:</td><td style="padding: 8px;">${esc(guest.name)}</td></tr>
+        <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">${esc(guest.email)}</td></tr>
         <tr><td style="padding: 8px; font-weight: bold;">Attending:</td><td style="padding: 8px;">
           ${
             guest.attending === 'yes' ? 'Yes' :
@@ -59,7 +69,7 @@ export async function sendConfirmationEmail(
             ? `<tr><td style="padding: 8px; font-weight: bold;">Guests:</td><td style="padding: 8px;">${guest.numberOfGuests || 1}</td></tr>`
             : ''
         }
-        ${guest.message ? `<tr><td style="padding: 8px; font-weight: bold;">Message:</td><td style="padding: 8px;">${guest.message}</td></tr>` : ''}
+        ${guest.message ? `<tr><td style="padding: 8px; font-weight: bold;">Message:</td><td style="padding: 8px;">${esc(guest.message)}</td></tr>` : ''}
       </table>
       <p style="color: #888; font-size: 12px; margin-top: 20px;">Submitted: ${new Date().toLocaleString()}</p>
     </div>
@@ -79,10 +89,11 @@ export async function sendConfirmationEmail(
     }
   }
 
-  if (guest.email) {
+  const shouldSendThankYou = options?.sendThankYou !== false;
+  if (guest.email && shouldSendThankYou) {
     const guestHtml = `
       <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #8B7355;">Thank you, ${guest.name}! 💐</h2>
+        <h2 style="color: #8B7355;">Thank you, ${esc(guest.name)}! 💐</h2>
         <p>Your RSVP has been received.</p>
         <p>${
           guest.attending === 'yes'
@@ -102,9 +113,89 @@ export async function sendConfirmationEmail(
         subject: `Thank you for your RSVP, ${guest.name}!`,
         html: guestHtml,
       });
-      
     } catch (err) {
       console.error('Error sending guest email:', err);
+    }
+  }
+}
+
+interface GoldEmailData {
+  guestNames: string[];
+  attendingNames: string[];
+  email?: string;
+  message?: string;
+}
+
+export async function sendGoldConfirmationEmail(
+  data: GoldEmailData,
+  options?: { coupleEmail?: string; sendThankYou?: boolean }
+): Promise<void> {
+  if (!EMAIL_USER || !EMAIL_PASS) {
+    console.warn('⚠️ Email credentials not configured, skipping email');
+    return;
+  }
+
+  const allNames = data.guestNames.join(', ');
+  const attendingCount = data.attendingNames.length;
+  const subject = attendingCount > 0
+    ? `🎉 RSVP Confirmed: ${allNames}`
+    : `📬 RSVP Received: ${allNames} cannot attend`;
+
+  const guestRows = data.guestNames.map((name) => {
+    const isAttending = data.attendingNames.includes(name);
+    return `<tr><td style="padding: 8px;">${esc(name)}</td><td style="padding: 8px;">${isAttending ? '✅ Attending' : '❌ Declined'}</td></tr>`;
+  }).join('');
+
+  const coupleHtml = `
+    <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #8B7355; border-bottom: 2px solid #D4AF37; padding-bottom: 10px;">
+        Wedding RSVP ${attendingCount > 0 ? '✅' : '❌'}
+      </h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr><th style="padding: 8px; text-align: left;">Guest</th><th style="padding: 8px; text-align: left;">Status</th></tr>
+        ${guestRows}
+      </table>
+      ${data.message ? `<p style="padding: 8px;"><strong>Message:</strong> ${esc(data.message)}</p>` : ''}
+      <p style="color: #888; font-size: 12px; margin-top: 20px;">Submitted: ${new Date().toLocaleString()}</p>
+    </div>
+  `;
+
+  const coupleEmail = options?.coupleEmail?.trim();
+  if (coupleEmail) {
+    try {
+      await transporter.sendMail({
+        from: `"Wedding RSVP" <${EMAIL_USER}>`,
+        to: coupleEmail,
+        subject,
+        html: coupleHtml,
+      });
+    } catch (err) {
+      console.error('Error sending Gold confirmation to couple:', err);
+    }
+  }
+
+  if (data.email && options?.sendThankYou) {
+    const thankYouHtml = `
+      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #8B7355;">Thank you! 💐</h2>
+        <p>Your RSVP has been received for: <strong>${esc(allNames)}</strong></p>
+        <p>${attendingCount > 0
+          ? `We're delighted ${data.attendingNames.map(n => esc(n)).join(', ')} will be joining us!`
+          : `We're sorry you can't make it. You'll be missed!`
+        }</p>
+        <p style="color: #D4AF37; font-style: italic;">With love and gratitude ❤️</p>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: `"Wedding Invitation" <${EMAIL_USER}>`,
+        to: data.email,
+        subject: `Thank you for your RSVP!`,
+        html: thankYouHtml,
+      });
+    } catch (err) {
+      console.error('Error sending Gold thank-you email:', err);
     }
   }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Settings, Users, LogOut, Trash2, Link2, Copy, Check, LayoutDashboard } from 'lucide-react';
+import { Plus, Settings, Users, LogOut, Trash2, Link2, Copy, Check, LayoutDashboard, Crown, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMyWeddings } from '../hooks/useWeddings';
 import { deleteWedding } from '../services/weddingService';
@@ -170,9 +170,22 @@ export function AdminDashboardPage() {
                 <div className="p-6">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-script text-2xl text-charcoal">
-                        {wedding.name || wedding.coupleNames}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-script text-2xl text-charcoal">
+                          {wedding.name || wedding.coupleNames}
+                        </h3>
+                        {(wedding.package || 'silver') === 'gold' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gold/10 border border-gold/30 rounded-full">
+                            <Crown size={12} className="text-gold" />
+                            <span className="font-montserrat text-[10px] font-semibold uppercase text-gold">Gold</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-charcoal/5 border border-charcoal/10 rounded-full">
+                            <Star size={12} className="text-charcoal/40" />
+                            <span className="font-montserrat text-[10px] font-semibold uppercase text-charcoal/40">Silver</span>
+                          </span>
+                        )}
+                      </div>
                       <p className="font-cormorant text-charcoal/60 mt-1">
                         {wedding.weddingDate}
                       </p>
@@ -190,14 +203,17 @@ export function AdminDashboardPage() {
                           <LayoutDashboard size={18} />
                         )}
                       </button>
-                      <button
-                        type="button"
-                        onClick={(e) => openLinkModal(e, wedding)}
-                        className="p-2 text-charcoal/50 hover:text-gold hover:bg-gold/10 rounded transition-colors"
-                        title="Generate invite link"
-                      >
-                        <Link2 size={18} />
-                      </button>
+                      {/* Only show invite link generator for Silver weddings */}
+                      {(wedding.package || 'silver') !== 'gold' && (
+                        <button
+                          type="button"
+                          onClick={(e) => openLinkModal(e, wedding)}
+                          className="p-2 text-charcoal/50 hover:text-gold hover:bg-gold/10 rounded transition-colors"
+                          title="Generate invite link"
+                        >
+                          <Link2 size={18} />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-3 mt-4">
