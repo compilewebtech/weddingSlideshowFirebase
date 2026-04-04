@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, FileSpreadsheet, Users, CheckCircle, XCircle,
-  HelpCircle, Clock, Copy, Check, Link2, Unlink, UserPlus, Download, X, Plus, Trash2,
+  HelpCircle, Clock, Copy, Check, Link2, Unlink, UserPlus, X, Plus, Trash2,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGuests } from '../hooks/useGuests';
@@ -11,12 +11,12 @@ import { useWedding } from '../hooks/useWeddings';
 
 export function WeddingGuestsPage() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { wedding } = useWedding(id || null);
   const {
     guests, stats, exportToExcel, groupSelectedGuests, ungroupSelectedGuests,
-    addGoldGuest, downloadTemplate,
+    addGoldGuest,
   } = useGuests(id || null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
@@ -33,8 +33,8 @@ export function WeddingGuestsPage() {
   const isGold = (wedding?.package || 'silver') === 'gold';
 
   useEffect(() => {
-    if (!user) navigate('/admin/login');
-  }, [user, navigate]);
+    if (!authLoading && !user) navigate('/admin/login', { replace: true });
+  }, [user, authLoading, navigate]);
 
   const toggleSelect = (guestId: string) => {
     setSelectedIds((prev) => {
@@ -145,7 +145,13 @@ export function WeddingGuestsPage() {
       label: members.map((g) => `${g.firstName || g.name}`).join(' & '),
     }));
 
-  if (!user) return null;
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="animate-pulse font-cormorant text-charcoal/60">Loading...</div>
+      </div>
+    );
+  }
 
   const colCount = isGold
     ? (wedding?.sendThankYou !== false ? 7 : 6)
@@ -223,16 +229,6 @@ export function WeddingGuestsPage() {
 
           {isGold && (
             <>
-              <motion.button
-                onClick={downloadTemplate}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gold text-white rounded-lg font-montserrat text-sm hover:bg-gold/90 transition-colors"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Download size={18} />
-                Download Template
-              </motion.button>
-
               <motion.button
                 onClick={() => setShowAddGuest(true)}
                 className="flex items-center gap-2 px-5 py-2.5 bg-charcoal text-white rounded-lg font-montserrat text-sm hover:bg-charcoal/90 transition-colors"

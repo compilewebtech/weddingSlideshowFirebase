@@ -12,10 +12,11 @@ import { MusicSelector } from '../components/MusicSelector';
 import type { Wedding } from '../types';
 
 export function CreateWeddingPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const submittingRef = useRef(false);
   const [form, setForm] = useState<Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> & { password?: string }>({
     ...DEFAULT_WEDDING,
     name: '',
@@ -31,8 +32,16 @@ export function CreateWeddingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!user) navigate('/admin/login');
-  }, [user, navigate]);
+    if (!authLoading && !user) navigate('/admin/login', { replace: true });
+  }, [user, authLoading, navigate]);
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="animate-pulse font-cormorant text-charcoal/60">Loading...</div>
+      </div>
+    );
+  }
 
   const update = (key: keyof typeof form, value: unknown) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -73,21 +82,23 @@ export function CreateWeddingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || loading) return;
+    if (!user || loading || submittingRef.current) return;
     if (form.package === 'gold' && !excelFile) {
       setError('Please upload a guest list Excel file for Gold package');
       return;
     }
     setError('');
     setLoading(true);
+    submittingRef.current = true;
     try {
       const wedding = await createWedding(user.uid, form);
       // If Gold, upload the Excel file after creating the wedding
       if (form.package === 'gold' && excelFile) {
         await uploadGuestExcel(wedding.id, excelFile);
       }
-      navigate(`/admin/wedding/${wedding.id}`);
+      navigate('/admin');
     } catch (err: unknown) {
+      submittingRef.current = false;
       const message =
         err instanceof Error
           ? err.message

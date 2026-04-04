@@ -22,9 +22,17 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/admin/login');
+      navigate('/admin/login', { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="animate-pulse font-cormorant text-charcoal/60">Loading...</div>
+      </div>
+    );
+  }
 
   const handleSignOut = async () => {
     await signOut();

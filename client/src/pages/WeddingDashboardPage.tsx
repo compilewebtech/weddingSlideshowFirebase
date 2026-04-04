@@ -140,25 +140,11 @@ function DashboardContent() {
   if (noAccessMethod) {
     return (
       <div className="min-h-screen bg-cream">
-        <header className="bg-white border-b border-gold/20 px-4 py-4">
-          <div className="max-w-6xl mx-auto">
-            <Link to={`/wedding/${wedding.id}`} className="text-charcoal/60 hover:text-charcoal inline-flex items-center gap-2">
-              <ArrowLeft size={20} />
-              <span className="font-montserrat text-sm">Back to invitation</span>
-            </Link>
-          </div>
-        </header>
         <main className="max-w-md mx-auto px-4 py-16 text-center">
           <h1 className="font-script text-4xl text-gold mb-6">Guest Dashboard</h1>
           <p className="font-cormorant text-lg text-charcoal/70">
             Access has not been set up for this wedding. Contact the organizer.
           </p>
-          <Link
-            to={`/wedding/${wedding.id}`}
-            className="mt-6 inline-block px-6 py-3 border border-gold/40 text-gold font-montserrat text-sm uppercase hover:bg-gold/10 transition-colors"
-          >
-            View Invitation
-          </Link>
         </main>
       </div>
     );
@@ -167,14 +153,6 @@ function DashboardContent() {
   if (needsPassword) {
     return (
       <div className="min-h-screen bg-cream">
-        <header className="bg-white border-b border-gold/20 px-4 py-4">
-          <div className="max-w-6xl mx-auto">
-            <Link to={`/wedding/${wedding.id}`} className="text-charcoal/60 hover:text-charcoal inline-flex items-center gap-2">
-              <ArrowLeft size={20} />
-              <span className="font-montserrat text-sm">Back to invitation</span>
-            </Link>
-          </div>
-        </header>
         <main className="max-w-md mx-auto px-4 py-16">
           <h1 className="font-script text-4xl text-gold text-center mb-6">Guest Dashboard</h1>
           <p className="font-cormorant text-lg text-charcoal/70 text-center mb-8">
@@ -218,10 +196,14 @@ function DashboardContent() {
     <div className="min-h-screen bg-cream">
       <header className="bg-white border-b border-gold/20 px-4 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-          <Link to={`/wedding/${wedding.id}`} className="text-charcoal/60 hover:text-charcoal inline-flex items-center gap-2">
-            <ArrowLeft size={20} />
-            <span className="font-montserrat text-sm">Back to invitation</span>
-          </Link>
+          {isCreator ? (
+            <Link to="/admin" className="text-charcoal/60 hover:text-charcoal inline-flex items-center gap-2">
+              <ArrowLeft size={20} />
+              <span className="font-montserrat text-sm">Back to admin</span>
+            </Link>
+          ) : (
+            <div />
+          )}
           {hasPasswordAuth && (
             <button
               onClick={handleLogout}
