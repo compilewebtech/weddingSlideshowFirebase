@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Upload, Crown, Star } from 'lucide-react';
@@ -12,7 +12,7 @@ import { MusicSelector } from '../components/MusicSelector';
 import type { Wedding } from '../types';
 
 export function CreateWeddingPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,18 +30,6 @@ export function CreateWeddingPage() {
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [excelPreview, setExcelPreview] = useState<Array<{ firstName: string; lastName: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!authLoading && !user) navigate('/admin/login', { replace: true });
-  }, [user, authLoading, navigate]);
-
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="animate-pulse font-cormorant text-charcoal/60">Loading...</div>
-      </div>
-    );
-  }
 
   const update = (key: keyof typeof form, value: unknown) => {
     setForm((prev) => ({ ...prev, [key]: value }));

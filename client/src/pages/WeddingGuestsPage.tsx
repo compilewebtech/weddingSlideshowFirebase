@@ -1,27 +1,25 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, FileSpreadsheet, Users, CheckCircle, XCircle,
   HelpCircle, Clock, Copy, Check, Link2, Unlink, UserPlus, X, Plus, Trash2,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useGuests } from '../hooks/useGuests';
 import { useWedding } from '../hooks/useWeddings';
 
 export function WeddingGuestsPage() {
   const { id } = useParams<{ id: string }>();
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const { wedding } = useWedding(id || null);
   const {
     guests, stats, exportToExcel, groupSelectedGuests, ungroupSelectedGuests,
-    addGoldGuest,
+    addGoldGuest, deleteGuest,
   } = useGuests(id || null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [groupingError, setGroupingError] = useState('');
   const [groupingLoading, setGroupingLoading] = useState(false);
+  const [deletingGuestId, setDeletingGuestId] = useState<string | null>(null);
 
   // Add Guest modal state
   const [showAddGuest, setShowAddGuest] = useState(false);
@@ -31,10 +29,6 @@ export function WeddingGuestsPage() {
   const [addGuestError, setAddGuestError] = useState('');
 
   const isGold = (wedding?.package || 'silver') === 'gold';
-
-  useEffect(() => {
-    if (!authLoading && !user) navigate('/admin/login', { replace: true });
-  }, [user, authLoading, navigate]);
 
   const toggleSelect = (guestId: string) => {
     setSelectedIds((prev) => {
@@ -114,6 +108,18 @@ export function WeddingGuestsPage() {
     setTimeout(() => setCopiedToken(null), 2000);
   };
 
+  const handleDeleteGuest = async (guestId: string) => {
+    if (!confirm('Are you sure you want to delete this guest? This cannot be undone.')) return;
+    setDeletingGuestId(guestId);
+    try {
+      await deleteGuest(guestId);
+    } catch {
+      // error is set in the hook
+    } finally {
+      setDeletingGuestId(null);
+    }
+  };
+
   // Check if any selected guest is in a group (for showing ungroup button)
   const hasGroupedSelected = isGold && [...selectedIds].some((sid) => {
     const guest = guests.find((g) => g.id === sid);
@@ -145,17 +151,9 @@ export function WeddingGuestsPage() {
       label: members.map((g) => `${g.firstName || g.name}`).join(' & '),
     }));
 
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="animate-pulse font-cormorant text-charcoal/60">Loading...</div>
-      </div>
-    );
-  }
-
   const colCount = isGold
-    ? (wedding?.sendThankYou !== false ? 7 : 6)
-    : (wedding?.sendThankYou !== false ? 6 : 5);
+    ? (wedding?.sendThankYou !== false ? 8 : 7)
+    : (wedding?.sendThankYou !== false ? 7 : 6);
 
   return (
     <div className="min-h-screen bg-cream">
@@ -312,6 +310,7 @@ export function WeddingGuestsPage() {
                   {isGold && (
                     <th className="px-4 py-3 text-center font-montserrat text-xs uppercase text-charcoal/70">Link</th>
                   )}
+                  <th className="px-2 py-3 text-center font-montserrat text-xs uppercase text-charcoal/70 w-10"></th>
                 </tr>
               </thead>
               <tbody>
@@ -392,6 +391,20 @@ export function WeddingGuestsPage() {
                               {guest.message || '-'}
                             </td>
                             <td />
+                            <td className="px-2 py-3 text-center">
+                              <button
+                                onClick={() => handleDeleteGuest(guest.id)}
+                                disabled={deletingGuestId === guest.id}
+                                className="p-1.5 text-charcoal/30 hover:text-red-500 transition-colors disabled:opacity-50"
+                                title="Delete guest"
+                              >
+                                {deletingGuestId === guest.id ? (
+                                  <span className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin inline-block" />
+                                ) : (
+                                  <Trash2 size={16} />
+                                )}
+                              </button>
+                            </td>
                           </tr>
                         )),
                       ];
@@ -451,6 +464,20 @@ export function WeddingGuestsPage() {
                               </button>
                             )}
                           </td>
+                          <td className="px-2 py-3 text-center">
+                            <button
+                              onClick={() => handleDeleteGuest(guest.id)}
+                              disabled={deletingGuestId === guest.id}
+                              className="p-1.5 text-charcoal/30 hover:text-red-500 transition-colors disabled:opacity-50"
+                              title="Delete guest"
+                            >
+                              {deletingGuestId === guest.id ? (
+                                <span className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin inline-block" />
+                              ) : (
+                                <Trash2 size={16} />
+                              )}
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -492,6 +519,20 @@ export function WeddingGuestsPage() {
                       </td>
                       <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs truncate">
                         {guest.message || '-'}
+                      </td>
+                      <td className="px-2 py-3 text-center">
+                        <button
+                          onClick={() => handleDeleteGuest(guest.id)}
+                          disabled={deletingGuestId === guest.id}
+                          className="p-1.5 text-charcoal/30 hover:text-red-500 transition-colors disabled:opacity-50"
+                          title="Delete guest"
+                        >
+                          {deletingGuestId === guest.id ? (
+                            <span className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin inline-block" />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
+                        </button>
                       </td>
                     </tr>
                   ))

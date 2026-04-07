@@ -14,7 +14,7 @@ import type { Wedding } from '../types';
 
 export function EditWeddingPage() {
   const { id } = useParams<{ id: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { wedding, loading: weddingLoading } = useWedding(id || null);
   const [form, setForm] = useState<Partial<Wedding>>({});
@@ -30,20 +30,8 @@ export function EditWeddingPage() {
   const isGold = (form.package || 'silver') === 'gold';
 
   useEffect(() => {
-    if (!authLoading && !user) navigate('/admin/login', { replace: true });
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
     if (wedding) setForm(wedding);
   }, [wedding]);
-
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="animate-pulse font-cormorant text-charcoal/60">Loading...</div>
-      </div>
-    );
-  }
 
   const update = (key: keyof Wedding, value: unknown) => {
     setForm((prev) => ({ ...prev, [key]: value }));

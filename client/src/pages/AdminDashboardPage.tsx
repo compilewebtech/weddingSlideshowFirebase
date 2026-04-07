@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Settings, Users, LogOut, Trash2, Link2, Copy, Check, LayoutDashboard, Crown, Star } from 'lucide-react';
@@ -10,7 +10,7 @@ import { encodeInviteParams } from '../utils/inviteLink';
 import type { Wedding } from '../types';
 
 export function AdminDashboardPage() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { weddings, loading: weddingsLoading, refetch } = useMyWeddings(user?.uid ?? null);
   const navigate = useNavigate();
   const [deleteTarget, setDeleteTarget] = useState<Wedding | null>(null);
@@ -20,19 +20,6 @@ export function AdminDashboardPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [dashboardCopiedId, setDashboardCopiedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/admin/login', { replace: true });
-    }
-  }, [user, authLoading, navigate]);
-
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="animate-pulse font-cormorant text-charcoal/60">Loading...</div>
-      </div>
-    );
-  }
 
   const handleSignOut = async () => {
     await signOut();
@@ -91,16 +78,6 @@ export function AdminDashboardPage() {
     setTimeout(() => setDashboardCopiedId(null), 2000);
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
-        <div className="animate-pulse font-cormorant text-charcoal/60">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
   return (
     <div className="min-h-screen bg-cream">
       <header className="bg-white border-b border-gold/20 px-4 py-4">
@@ -108,7 +85,7 @@ export function AdminDashboardPage() {
           <h1 className="font-script text-3xl text-charcoal">Admin Dashboard</h1>
           <div className="flex items-center gap-4">
             <span className="font-montserrat text-sm text-charcoal/60">
-              {user.email}
+              {user!.email}
             </span>
             <button
               onClick={handleSignOut}

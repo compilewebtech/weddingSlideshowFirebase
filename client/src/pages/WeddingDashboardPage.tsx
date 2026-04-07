@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -100,8 +100,7 @@ function DashboardContent() {
   const isCreator = user && wedding?.createdBy === user.uid;
   const hasPasswordAuth = wedding?.id && isWeddingAuthenticated(wedding.id);
   const isAuthenticated = isCreator || hasPasswordAuth;
-  const needsPassword = !isAuthenticated && !!wedding?.passwordHash;
-  const noAccessMethod = !isAuthenticated && !wedding?.passwordHash;
+  const needsPassword = !isAuthenticated;
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,20 +136,21 @@ function DashboardContent() {
     );
   }
 
-  if (noAccessMethod) {
-    return (
-      <div className="min-h-screen bg-cream">
-        <main className="max-w-md mx-auto px-4 py-16 text-center">
-          <h1 className="font-script text-4xl text-gold mb-6">Guest Dashboard</h1>
-          <p className="font-cormorant text-lg text-charcoal/70">
-            Access has not been set up for this wedding. Contact the organizer.
-          </p>
-        </main>
-      </div>
-    );
-  }
-
   if (needsPassword) {
+    // No password configured — block access entirely
+    if (!wedding.passwordHash) {
+      return (
+        <div className="min-h-screen bg-cream">
+          <main className="max-w-md mx-auto px-4 py-16 text-center">
+            <h1 className="font-script text-4xl text-gold mb-6">Guest Dashboard</h1>
+            <p className="font-cormorant text-lg text-charcoal/70">
+              Access has not been set up for this wedding. Contact the organizer.
+            </p>
+          </main>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-cream">
         <main className="max-w-md mx-auto px-4 py-16">
