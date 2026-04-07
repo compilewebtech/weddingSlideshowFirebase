@@ -10,12 +10,15 @@ export function getWeddingAuthKey(weddingId: string) {
   return `wedding_auth_${weddingId}`;
 }
 
-export function isWeddingAuthenticated(weddingId: string): boolean {
-  return !!sessionStorage.getItem(getWeddingAuthKey(weddingId));
+/** Check if the stored hash matches the wedding's actual passwordHash */
+export function isWeddingAuthenticated(weddingId: string, passwordHash?: string): boolean {
+  const stored = sessionStorage.getItem(getWeddingAuthKey(weddingId));
+  if (!stored || !passwordHash) return false;
+  return stored === passwordHash;
 }
 
-export function setWeddingAuthenticated(weddingId: string) {
-  sessionStorage.setItem(getWeddingAuthKey(weddingId), '1');
+export function setWeddingAuthenticated(weddingId: string, hash: string) {
+  sessionStorage.setItem(getWeddingAuthKey(weddingId), hash);
 }
 
 export function clearWeddingAuth(weddingId: string) {

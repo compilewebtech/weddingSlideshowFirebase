@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, addDoc, deleteDoc, doc, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { Guest } from '../types';
 import * as XLSX from 'xlsx';
 import { groupGuests as apiGroupGuests, ungroupGuests as apiUngroupGuests, uploadGuestExcel as apiUploadExcel, addGoldGuest as apiAddGoldGuest } from '../services/rsvpApi';
+import { apiFetch } from './useApi';
 
 interface GuestStats {
   totalGuests: number;
@@ -123,12 +124,9 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
       setLoading(true);
       setError(null);
       try {
-        await deleteDoc(doc(db, 'weddings', weddingId, 'guests', id));
-        setGuests((prev) => {
-          const updated = prev.filter((g) => g.id !== id);
-          localStorage.setItem(getStorageKey(weddingId), JSON.stringify(updated));
-          return updated;
-        });
+        await apiFetch(`/weddings/${weddingId}/guests/${id}`, { method: 'DELETE' });
+        // Refetch to get updated tokens for remaining group members
+        await fetchGuests();
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to delete guest');
         throw err;
@@ -136,7 +134,7 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
         setLoading(false);
       }
     },
-    [weddingId]
+    [weddingId, fetchGuests]
   );
 
   const stats: GuestStats = (() => {

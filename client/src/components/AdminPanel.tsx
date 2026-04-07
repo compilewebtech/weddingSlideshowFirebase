@@ -22,7 +22,7 @@ export const AdminPanel = () => {
   const [checking, setChecking] = useState(false);
 
   const isCreator = user && wedding?.createdBy === user.uid;
-  const hasPasswordAuth = wedding?.id && isWeddingAuthenticated(wedding.id);
+  const hasPasswordAuth = !!(wedding?.id && wedding?.passwordHash && isWeddingAuthenticated(wedding.id, wedding.passwordHash));
   const isAuthenticated = isCreator || hasPasswordAuth;
   const needsPassword = !isAuthenticated && !!wedding?.passwordHash;
   const noAccessMethod = !isAuthenticated && !wedding?.passwordHash;
@@ -35,7 +35,7 @@ export const AdminPanel = () => {
     try {
       const hash = await hashPassword(password);
       if (hash === wedding.passwordHash) {
-        setWeddingAuthenticated(wedding.id);
+        setWeddingAuthenticated(wedding.id, hash);
         setPassword('');
       } else {
         setAuthError('Incorrect password');

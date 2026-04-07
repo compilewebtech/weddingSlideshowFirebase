@@ -288,8 +288,32 @@ router.delete('/:id', requireAuth, async (req: Request<{ weddingId: string; id: 
     const wedding = await requireWeddingExists(req as unknown as Request<{ weddingId: string }>, res);
     if (!wedding) return;
     const { weddingId, id } = req.params;
+
+    // Get guest before deleting to check group membership
+    const guest = await GuestModel.findById(weddingId, id);
+    if (!guest) return res.status(404).json({ error: 'Guest not found' });
+
+    const groupId = guest.groupId;
+
     const deleted = await GuestModel.deleteById(weddingId, id);
     if (!deleted) return res.status(404).json({ error: 'Guest not found' });
+
+    // If guest was in a group, update the remaining members' token
+    if (groupId && (wedding.package || 'silver') === 'gold') {
+      const remaining = await GuestModel.findByGroupId(weddingId, groupId);
+      if (remaining.length === 1) {
+        // One left → make solo with individual token
+        const solo = remaining[0];
+        const soloToken = generateSlugToken(solo.firstName || '', solo.lastName || '');
+        await GuestModel.updateGroupId(weddingId, [solo.id], solo.id, soloToken);
+      } else if (remaining.length >= 2) {
+        // Regenerate group token with remaining members' names
+        const details = remaining.map((g) => ({ firstName: g.firstName || '', lastName: g.lastName || '' }));
+        const newToken = generateGroupSlugToken(details);
+        await GuestModel.updateGroupId(weddingId, remaining.map((g) => g.id), groupId, newToken);
+      }
+    }
+
     return res.json({ message: 'Guest deleted', id });
   } catch (error) {
     console.error('Error deleting guest:', error);
