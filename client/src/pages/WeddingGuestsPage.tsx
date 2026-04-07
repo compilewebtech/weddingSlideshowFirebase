@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, FileSpreadsheet, Users, CheckCircle, XCircle,
-  HelpCircle, Clock, Copy, Check, Link2, Unlink, UserPlus, X, Plus, Trash2,
+  Copy, Check, Link2, Unlink, UserPlus, X, Plus, Trash2,
 } from 'lucide-react';
 import { useGuests } from '../hooks/useGuests';
 import { useWedding } from '../hooks/useWeddings';
@@ -175,7 +175,7 @@ export function WeddingGuestsPage() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Stats */}
-        <div className={`grid gap-4 mb-8 ${isGold ? 'grid-cols-2 md:grid-cols-5' : 'grid-cols-2 md:grid-cols-5'}`}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg border border-gold/20 text-center">
             <Users className="w-8 h-8 mx-auto text-gold mb-2" />
             <p className="font-cormorant text-2xl text-charcoal">{stats.totalInvited}</p>
@@ -193,19 +193,6 @@ export function WeddingGuestsPage() {
             <p className="font-cormorant text-2xl text-charcoal">{stats.notAttending}</p>
             <p className="font-montserrat text-xs text-charcoal/60 uppercase">Declined</p>
           </div>
-          {isGold ? (
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <Clock className="w-8 h-8 mx-auto text-gray-500 mb-2" />
-              <p className="font-cormorant text-2xl text-charcoal">{stats.pendingCount}</p>
-              <p className="font-montserrat text-xs text-charcoal/60 uppercase">Pending</p>
-            </div>
-          ) : (
-            <div className="bg-yellow-50 p-4 rounded-lg text-center">
-              <HelpCircle className="w-8 h-8 mx-auto text-yellow-600 mb-2" />
-              <p className="font-cormorant text-2xl text-charcoal">{stats.pending}</p>
-              <p className="font-montserrat text-xs text-charcoal/60 uppercase">Maybe</p>
-            </div>
-          )}
           <div className="bg-gold/10 p-4 rounded-lg text-center">
             <Users className="w-8 h-8 mx-auto text-gold mb-2" />
             <p className="font-cormorant text-2xl text-charcoal">{stats.totalGuestsAttending}</p>

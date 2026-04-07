@@ -225,7 +225,6 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
       { ...empty, Name: 'Total Invited', Attending: String(stats.totalInvited) },
       { ...empty, Name: 'Attending', Attending: String(stats.attending) },
       { ...empty, Name: 'Declined', Attending: String(stats.notAttending) },
-      { ...empty, Name: 'Maybe / Pending', Attending: String(stats.pending + stats.pendingCount) },
       { ...empty, Name: 'Total Guests Attending', Attending: String(stats.totalGuestsAttending) },
     ];
 

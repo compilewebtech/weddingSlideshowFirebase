@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileSpreadsheet, Users, CheckCircle, XCircle, HelpCircle, Lock, Eye, EyeOff } from 'lucide-react';
+import { FileSpreadsheet, Users, CheckCircle, XCircle, Lock, Eye, EyeOff } from 'lucide-react';
 import { useGuests } from '../hooks/useGuests';
 import { useWeddingContext } from '../contexts/WeddingContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -170,7 +170,7 @@ export const AdminPanel = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <div className="bg-cream p-4 rounded-lg text-center">
                       <Users className="w-8 h-8 mx-auto text-gold mb-2" />
                       <p className="font-cormorant text-3xl text-charcoal">{stats.totalGuests}</p>
@@ -185,11 +185,6 @@ export const AdminPanel = () => {
                       <XCircle className="w-8 h-8 mx-auto text-red-500 mb-2" />
                       <p className="font-cormorant text-3xl text-charcoal">{stats.notAttending}</p>
                       <p className="font-montserrat text-xs text-charcoal/60 uppercase tracking-wider">Declined</p>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg text-center">
-                      <HelpCircle className="w-8 h-8 mx-auto text-yellow-600 mb-2" />
-                      <p className="font-cormorant text-3xl text-charcoal">{stats.pending}</p>
-                      <p className="font-montserrat text-xs text-charcoal/60 uppercase tracking-wider">Maybe</p>
                     </div>
                     <div className="bg-gold/10 p-4 rounded-lg text-center">
                       <Users className="w-8 h-8 mx-auto text-gold mb-2" />

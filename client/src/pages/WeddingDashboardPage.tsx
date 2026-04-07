@@ -6,10 +6,11 @@ import {
   Users,
   CheckCircle,
   XCircle,
-  HelpCircle,
-  Clock,
   Eye,
   EyeOff,
+  Copy,
+  Check,
+  Link2,
 } from 'lucide-react';
 import { useWedding } from '../hooks/useWeddings';
 import { useGuests } from '../hooks/useGuests';
@@ -29,6 +30,7 @@ function DashboardContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [checking, setChecking] = useState(false);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const isGold = (wedding?.package || 'silver') === 'gold';
 
   // Auth: password-only, no admin bypass
@@ -161,7 +163,7 @@ function DashboardContent() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg border border-gold/20 text-center">
             <Users className="w-8 h-8 mx-auto text-gold mb-2" />
             <p className="font-cormorant text-2xl text-charcoal">{stats.totalInvited}</p>
@@ -179,19 +181,6 @@ function DashboardContent() {
             <p className="font-cormorant text-2xl text-charcoal">{stats.notAttending}</p>
             <p className="font-montserrat text-xs text-charcoal/60 uppercase">Declined</p>
           </div>
-          {isGold ? (
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <Clock className="w-8 h-8 mx-auto text-gray-500 mb-2" />
-              <p className="font-cormorant text-2xl text-charcoal">{stats.pendingCount}</p>
-              <p className="font-montserrat text-xs text-charcoal/60 uppercase">Pending</p>
-            </div>
-          ) : (
-            <div className="bg-yellow-50 p-4 rounded-lg text-center">
-              <HelpCircle className="w-8 h-8 mx-auto text-yellow-600 mb-2" />
-              <p className="font-cormorant text-2xl text-charcoal">{stats.pending}</p>
-              <p className="font-montserrat text-xs text-charcoal/60 uppercase">Maybe</p>
-            </div>
-          )}
           <div className="bg-gold/10 p-4 rounded-lg text-center">
             <Users className="w-8 h-8 mx-auto text-gold mb-2" />
             <p className="font-cormorant text-2xl text-charcoal">{stats.totalGuestsAttending}</p>
@@ -230,44 +219,73 @@ function DashboardContent() {
                     </>
                   )}
                   <th className="px-4 py-3 text-left font-montserrat text-xs uppercase text-charcoal/70">Message</th>
+                  {isGold && (
+                    <th className="px-4 py-3 text-center font-montserrat text-xs uppercase text-charcoal/70">Link</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {guests.length === 0 ? (
                   <tr>
-                    <td colSpan={isGold ? (wedding?.sendThankYou !== false ? 4 : 3) : (wedding?.sendThankYou !== false ? 6 : 5)} className="px-4 py-12 text-center text-charcoal/50 font-cormorant italic">
+                    <td colSpan={isGold ? (wedding?.sendThankYou !== false ? 5 : 4) : (wedding?.sendThankYou !== false ? 6 : 5)} className="px-4 py-12 text-center text-charcoal/50 font-cormorant italic">
                       {isGold ? 'No guests uploaded yet' : 'No RSVPs yet'}
                     </td>
                   </tr>
                 ) : isGold ? (
                   <>
                     {/* Gold: Grouped display */}
-                    {multiGroups.flatMap(([gid, members]) => [
-                      <tr key={`gh-${gid}`} className="border-t-2 border-gold/20 bg-blue-50/40">
-                        <td colSpan={wedding?.sendThankYou !== false ? 4 : 3} className="px-4 py-2">
-                          <span className="font-montserrat text-xs font-semibold text-blue-600 uppercase tracking-wider">
-                            Group — {members.length} guests
-                          </span>
-                        </td>
-                      </tr>,
-                      ...members.map((guest) => (
-                        <tr key={guest.id} className="border-t border-charcoal/5 bg-blue-50/20 hover:bg-blue-50/40">
-                          <td className="px-4 py-3 font-cormorant pl-8">{guest.firstName} {guest.lastName || ''}</td>
-                          {wedding?.sendThankYou !== false && (
-                            <td className="px-4 py-3 font-montserrat text-sm text-charcoal/70">{guest.email || '-'}</td>
-                          )}
-                          <td className="px-4 py-3 text-center">
-                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-montserrat uppercase ${
-                              guest.attending === 'yes' ? 'bg-green-100 text-green-700'
-                              : guest.attending === 'no' ? 'bg-red-100 text-red-700'
-                              : guest.attending === 'pending' ? 'bg-gray-100 text-gray-600'
-                              : 'bg-yellow-100 text-yellow-700'
-                            }`}>{guest.attending}</span>
+                    {multiGroups.flatMap(([gid, members]) => {
+                      const groupToken = members[0]?.guestToken;
+                      return [
+                        <tr key={`gh-${gid}`} className="border-t-2 border-gold/20 bg-blue-50/40">
+                          <td colSpan={wedding?.sendThankYou !== false ? 4 : 3} className="px-4 py-2">
+                            <div className="flex items-center gap-3">
+                              <Link2 size={14} className="text-blue-500" />
+                              <span className="font-montserrat text-xs font-semibold text-blue-600 uppercase tracking-wider">
+                                Shared Invite — {members.length} guests
+                              </span>
+                            </div>
                           </td>
-                          <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs truncate">{guest.message || '-'}</td>
-                        </tr>
-                      )),
-                    ])}
+                          <td className="px-4 py-2 text-center">
+                            {groupToken && (
+                              <button
+                                onClick={() => {
+                                  const url = `${window.location.origin}/wedding/${id}?invite=${groupToken}`;
+                                  navigator.clipboard.writeText(url);
+                                  setCopiedToken(groupToken);
+                                  setTimeout(() => setCopiedToken(null), 2000);
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-montserrat text-gold hover:bg-gold/5 rounded transition-colors"
+                              >
+                                {copiedToken === groupToken ? (
+                                  <><Check size={14} className="text-green-600" /><span className="text-green-600">Copied</span></>
+                                ) : (
+                                  <><Copy size={14} />Copy Group Link</>
+                                )}
+                              </button>
+                            )}
+                          </td>
+                        </tr>,
+                        ...members.map((guest) => (
+                          <tr key={guest.id} className="border-t border-charcoal/5 bg-blue-50/20 hover:bg-blue-50/40">
+                            <td className="px-4 py-3 font-cormorant pl-8">{guest.firstName} {guest.lastName || ''}</td>
+                            {wedding?.sendThankYou !== false && (
+                              <td className="px-4 py-3 font-montserrat text-sm text-charcoal/70">{guest.email || '-'}</td>
+                            )}
+                            <td className="px-4 py-3 text-center">
+                              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-montserrat uppercase ${
+                                guest.attending === 'yes' ? 'bg-green-100 text-green-700'
+                                : guest.attending === 'no' ? 'bg-red-100 text-red-700'
+                                : guest.attending === 'pending' ? 'bg-gray-100 text-gray-600'
+                                : 'bg-yellow-100 text-yellow-700'
+                              }`}>{guest.attending}</span>
+                            </td>
+                            <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs truncate">{guest.message || '-'}</td>
+                            <td />
+                          </tr>
+                        )),
+                      ];
+                    })}
                     {solos.map(([, members]) => {
                       const guest = members[0];
                       return (
@@ -285,6 +303,25 @@ function DashboardContent() {
                             }`}>{guest.attending}</span>
                           </td>
                           <td className="px-4 py-3 font-cormorant text-charcoal/70 max-w-xs truncate">{guest.message || '-'}</td>
+                          <td className="px-4 py-3 text-center">
+                            {guest.guestToken && (
+                              <button
+                                onClick={() => {
+                                  const url = `${window.location.origin}/wedding/${id}?invite=${guest.guestToken}`;
+                                  navigator.clipboard.writeText(url);
+                                  setCopiedToken(guest.guestToken!);
+                                  setTimeout(() => setCopiedToken(null), 2000);
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-montserrat text-gold hover:bg-gold/5 rounded transition-colors"
+                              >
+                                {copiedToken === guest.guestToken ? (
+                                  <><Check size={14} className="text-green-600" /><span className="text-green-600">Copied</span></>
+                                ) : (
+                                  <><Copy size={14} />Copy</>
+                                )}
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
