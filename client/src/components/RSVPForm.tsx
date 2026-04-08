@@ -20,7 +20,7 @@ export const RSVPForm = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    attending: 'yes' as 'yes' | 'no' | 'maybe',
+    attending: 'yes' as 'yes' | 'no',
     numberOfGuests: 1,
     guestNames: [''] as string[],
     guestAttending: ['yes'] as ('yes' | 'no')[],
@@ -259,18 +259,17 @@ export const RSVPForm = () => {
                       <label className="block font-montserrat text-xs tracking-widest text-charcoal/70 uppercase mb-2">
                         Will you be attending? *
                       </label>
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                         {[
                           { value: 'yes', label: 'Joyfully Accept' },
                           { value: 'no', label: 'Regretfully Decline' },
-                          { value: 'maybe', label: 'Not Sure Yet' },
                         ].map((option) => (
                           <button
                             key={option.value}
                             type="button"
                             onClick={() =>
                               setFormData((prev) => {
-                                const next = { ...prev, attending: option.value as 'yes' | 'no' | 'maybe' };
+                                const next = { ...prev, attending: option.value as 'yes' | 'no' };
                                 if (next.attending !== 'no') {
                                   if (!next.guestNames[0] && prev.name) {
                                     const names = [...next.guestNames];

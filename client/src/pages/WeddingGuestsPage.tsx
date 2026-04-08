@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, FileSpreadsheet, Users, CheckCircle, XCircle,
-  Copy, Check, Link2, Unlink, UserPlus, X, Plus, Trash2,
+  Clock, Copy, Check, Link2, Unlink, UserPlus, X, Plus, Trash2,
 } from 'lucide-react';
 import { useGuests } from '../hooks/useGuests';
 import { useWedding } from '../hooks/useWeddings';
@@ -175,7 +175,7 @@ export function WeddingGuestsPage() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className={`grid grid-cols-2 ${isGold ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4 mb-8`}>
           <div className="bg-white p-4 rounded-lg border border-gold/20 text-center">
             <Users className="w-8 h-8 mx-auto text-gold mb-2" />
             <p className="font-cormorant text-2xl text-charcoal">{stats.totalInvited}</p>
@@ -193,6 +193,13 @@ export function WeddingGuestsPage() {
             <p className="font-cormorant text-2xl text-charcoal">{stats.notAttending}</p>
             <p className="font-montserrat text-xs text-charcoal/60 uppercase">Declined</p>
           </div>
+          {isGold && (
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <Clock className="w-8 h-8 mx-auto text-gray-500 mb-2" />
+              <p className="font-cormorant text-2xl text-charcoal">{stats.pendingCount}</p>
+              <p className="font-montserrat text-xs text-charcoal/60 uppercase">Pending</p>
+            </div>
+          )}
           <div className="bg-gold/10 p-4 rounded-lg text-center">
             <Users className="w-8 h-8 mx-auto text-gold mb-2" />
             <p className="font-cormorant text-2xl text-charcoal">{stats.totalGuestsAttending}</p>
@@ -363,8 +370,7 @@ export function WeddingGuestsPage() {
                               <span className={`inline-flex px-3 py-1 rounded-full text-xs font-montserrat uppercase ${
                                 guest.attending === 'yes' ? 'bg-green-100 text-green-700'
                                 : guest.attending === 'no' ? 'bg-red-100 text-red-700'
-                                : guest.attending === 'pending' ? 'bg-gray-100 text-gray-600'
-                                : 'bg-yellow-100 text-yellow-700'
+                                : 'bg-gray-100 text-gray-600'
                               }`}>
                                 {guest.attending}
                               </span>
@@ -419,8 +425,7 @@ export function WeddingGuestsPage() {
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-montserrat uppercase ${
                               guest.attending === 'yes' ? 'bg-green-100 text-green-700'
                               : guest.attending === 'no' ? 'bg-red-100 text-red-700'
-                              : guest.attending === 'pending' ? 'bg-gray-100 text-gray-600'
-                              : 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-600'
                             }`}>
                               {guest.attending}
                             </span>
@@ -483,8 +488,7 @@ export function WeddingGuestsPage() {
                         <span className={`inline-flex px-3 py-1 rounded-full text-xs font-montserrat uppercase ${
                           guest.attending === 'yes' ? 'bg-green-100 text-green-700'
                           : guest.attending === 'no' ? 'bg-red-100 text-red-700'
-                          : guest.attending === 'pending' ? 'bg-gray-100 text-gray-600'
-                          : 'bg-yellow-100 text-yellow-700'
+                          : 'bg-gray-100 text-gray-600'
                         }`}>
                           {guest.attending}
                         </span>

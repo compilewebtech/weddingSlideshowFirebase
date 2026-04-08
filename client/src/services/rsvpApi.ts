@@ -7,7 +7,7 @@ const API_URL = isDev ? '' : 'https://us-central1-wedding-invitation-slideshow.c
 export interface RsvpFormData {
   name: string;
   email: string;
-  attending: 'yes' | 'no' | 'maybe';
+  attending: 'yes' | 'no';
   numberOfGuests: number;
   guestNames?: string[];
   guestAttending?: ('yes' | 'no')[];

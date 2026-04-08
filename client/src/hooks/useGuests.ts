@@ -10,7 +10,6 @@ interface GuestStats {
   totalGuests: number;
   attending: number;
   notAttending: number;
-  pending: number;
   pendingCount: number;
   totalPeople: number;
   totalGuestsAttending: number;
@@ -140,7 +139,6 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
   const stats: GuestStats = (() => {
     let attending = 0;
     let notAttending = 0;
-    let pending = 0;
     let pendingCount = 0;
     let totalInvited = 0;
     let totalGuestsAttending = 0;
@@ -161,9 +159,6 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
       } else if (g.attending === 'no') {
         notAttending++;
         totalInvited++;
-      } else if (g.attending === 'maybe') {
-        pending++;
-        totalInvited++;
       } else if (g.attending === 'pending') {
         pendingCount++;
         totalInvited++;
@@ -174,7 +169,6 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
       totalGuests: guests.length,
       attending,
       notAttending,
-      pending,
       pendingCount,
       totalPeople: totalGuestsAttending,
       totalGuestsAttending,
@@ -208,7 +202,7 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
           Name: guest.firstName ? `${guest.firstName} ${guest.lastName || ''}` : guest.name,
           Email: guest.email || '',
           Attending:
-            guest.attending === 'yes' ? 'Yes' : guest.attending === 'no' ? 'No' : guest.attending === 'pending' ? 'Pending' : 'Maybe',
+            guest.attending === 'yes' ? 'Yes' : guest.attending === 'no' ? 'No' : 'Pending',
           'Dietary Restrictions': guest.dietaryRestrictions || '',
           Message: guest.message || '',
           'Submitted At': guest.submittedAt
@@ -225,6 +219,7 @@ export function useGuests(weddingId: string | null): UseGuestsResult {
       { ...empty, Name: 'Total Invited', Attending: String(stats.totalInvited) },
       { ...empty, Name: 'Attending', Attending: String(stats.attending) },
       { ...empty, Name: 'Declined', Attending: String(stats.notAttending) },
+      ...(stats.pendingCount > 0 ? [{ ...empty, Name: 'Pending', Attending: String(stats.pendingCount) }] : []),
       { ...empty, Name: 'Total Guests Attending', Attending: String(stats.totalGuestsAttending) },
     ];
 

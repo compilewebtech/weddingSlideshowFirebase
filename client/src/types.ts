@@ -3,7 +3,7 @@ export interface Guest {
   name: string;
   email?: string;
   phone?: string;
-  attending: 'yes' | 'no' | 'maybe' | 'pending';
+  attending: 'yes' | 'no' | 'pending';
   numberOfGuests: number;
   guestNames?: string[];
   guestAttending?: ('yes' | 'no')[];
