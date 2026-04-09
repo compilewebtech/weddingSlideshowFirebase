@@ -11,6 +11,8 @@ const app = express();
 const CLIENT_URLS = [
   'https://weddingslideshowf.netlify.app',
   'https://weddingslideshow.netlify.app',
+  'https://compilethemoment.com',
+  'https://www.compilethemoment.com',
 ];
 
 const allowedOrigins = [
