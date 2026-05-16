@@ -13,6 +13,8 @@ const CLIENT_URLS = [
   'https://weddingslideshow.netlify.app',
   'https://compilethemoment.com',
   'https://www.compilethemoment.com',
+  'https://wedding-invitation-slideshow.web.app',
+  'https://wedding-invitation-slideshow.firebaseapp.com',
 ];
 
 const allowedOrigins = [
