@@ -14,6 +14,7 @@ import { Footer } from '../components/Footer';
 import { useAudio } from '../hooks/useAudio';
 import { useWedding } from '../hooks/useWeddings';
 import { WeddingProvider } from '../contexts/WeddingContext';
+import { resolveMusicUrl } from '../constants/wedding';
 
 function WeddingContent() {
   const { id } = useParams<{ id: string }>();
@@ -26,7 +27,7 @@ function WeddingContent() {
   const inviteParams = !isGold && inviteParam ? decodeInviteParams(inviteParam) : null;
   const guestToken = isGold ? inviteParam : undefined;
   const [hasEntered, setHasEntered] = useState(false);
-  const musicUrl = wedding?.musicUrl || 'https://firebasestorage.googleapis.com/v0/b/wedding-invitation-slideshow.firebasestorage.app/o/A%20Sky%20Full%20of%20Stars%20Coldplay%20violin%20cover.mp3?alt=media';
+  const musicUrl = resolveMusicUrl(wedding?.musicUrl);
   const { isPlaying, toggle, play } = useAudio(musicUrl);
 
   const handleEnter = () => {

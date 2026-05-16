@@ -7,6 +7,19 @@ const STORAGE_MUSIC_BASE =
 const musicUrl = (filename: string) =>
   `${STORAGE_MUSIC_BASE}${encodeURIComponent(filename)}?alt=media`;
 
+/**
+ * Backfill: weddings created before the mp3-to-Storage migration have
+ * relative paths like "/A Sky Full of Stars Coldplay violin cover.mp3"
+ * saved in Firestore. Map those to Storage URLs so existing weddings keep
+ * playing music without a data migration.
+ */
+export function resolveMusicUrl(saved: string | undefined): string {
+  if (!saved) return musicUrl('A Sky Full of Stars Coldplay violin cover.mp3');
+  if (saved.startsWith('http://') || saved.startsWith('https://')) return saved;
+  // Treat anything else (e.g. "/Some Song.mp3" or "Some Song.mp3") as a Storage filename
+  return musicUrl(saved.replace(/^\/+/, ''));
+}
+
 export const MUSIC_TRACKS = [
   {
     url: musicUrl('A Sky Full of Stars Coldplay violin cover.mp3'),
