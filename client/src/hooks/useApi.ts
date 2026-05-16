@@ -1,5 +1,5 @@
-const isDev = import.meta.env.DEV;
-const API_URL = isDev ? '/api' : 'https://us-central1-wedding-invitation-slideshow.cloudfunctions.net/api';
+// Same-origin in both dev (Vite proxy) and prod (Firebase Hosting /api/** rewrite to the `api` function)
+const API_URL = '/api';
 
 export function getAuthToken(): Promise<string | null> {
   return import('../lib/firebase').then(({ auth }) => {

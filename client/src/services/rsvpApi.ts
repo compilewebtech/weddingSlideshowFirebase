@@ -1,9 +1,6 @@
 import { apiFetch } from '../hooks/useApi';
 import type { Guest } from '../types';
 
-const isDev = import.meta.env.DEV;
-const API_URL = isDev ? '' : 'https://us-central1-wedding-invitation-slideshow.cloudfunctions.net/api';
-
 export interface RsvpFormData {
   name: string;
   email: string;
@@ -16,12 +13,8 @@ export interface RsvpFormData {
 }
 
 async function rsvpFetch(url: string, options: RequestInit): Promise<Response> {
-  const fullUrl = url.startsWith('http') ? url : (API_URL ? `${API_URL}${url.startsWith('/') ? '' : '/'}${url}` : url);
-  if (!fullUrl.startsWith('http') && !fullUrl.startsWith('/')) {
-    throw new Error('API URL not configured.');
-  }
   try {
-    return await fetch(fullUrl, options);
+    return await fetch(url, options);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch')) {
@@ -34,7 +27,7 @@ async function rsvpFetch(url: string, options: RequestInit): Promise<Response> {
 }
 
 function apiPath(path: string): string {
-  return API_URL ? `${API_URL}${path}` : `/api${path}`;
+  return `/api${path}`;
 }
 
 export async function sendOtp(weddingId: string, data: RsvpFormData): Promise<void> {
