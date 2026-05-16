@@ -17,6 +17,7 @@ server/node_modules
 *.log
 .firebase
 firebase-debug.log
+_music_to_upload/
 
 # OS
 .DS_Store

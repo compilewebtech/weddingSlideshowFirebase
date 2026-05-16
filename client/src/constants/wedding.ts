@@ -1,28 +1,35 @@
 import type { Wedding } from '../types';
 
+// Music files live in Firebase Storage (public read). Uploaded once at the bucket root.
+// URL format: https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<url-encoded-filename>?alt=media
+const STORAGE_MUSIC_BASE =
+  'https://firebasestorage.googleapis.com/v0/b/wedding-invitation-slideshow.firebasestorage.app/o/';
+const musicUrl = (filename: string) =>
+  `${STORAGE_MUSIC_BASE}${encodeURIComponent(filename)}?alt=media`;
+
 export const MUSIC_TRACKS = [
   {
-    url: '/A Sky Full of Stars Coldplay violin cover.mp3',
+    url: musicUrl('A Sky Full of Stars Coldplay violin cover.mp3'),
     label: 'A Sky Full of Stars',
     artist: 'Coldplay — Violin Cover',
   },
   {
-    url: '/What About Us.mp3',
+    url: musicUrl('What About Us.mp3'),
     label: 'What About Us',
     artist: 'Pink',
   },
   {
-    url: '/The Night We Met (Bridgerton) - Emotional Piano Cover.mp3',
+    url: musicUrl('The Night We Met (Bridgerton) - Emotional Piano Cover.mp3'),
     label: 'The Night We Met',
     artist: 'Bridgerton — Emotional Piano Cover',
   },
   {
-    url: '/Birds of a Feather.mp3',
+    url: musicUrl('Birds of a Feather.mp3'),
     label: 'Birds of a Feather',
     artist: 'Billie Eilish',
   },
   {
-    url: '/Ordinary (Bridgerton Version) Orchestral Cover.mp3',
+    url: musicUrl('Ordinary (Bridgerton Version) Orchestral Cover.mp3'),
     label: 'Ordinary',
     artist: 'Bridgerton — Orchestral Cover',
   },
@@ -56,7 +63,7 @@ export const DEFAULT_WEDDING: Omit<Wedding, 'id' | 'createdBy' | 'createdAt'> = 
     { url: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=1200&h=800&fit=crop', caption: 'Together forever' },
     { url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=1200&h=800&fit=crop', caption: 'Two hearts, one love' },
   ],
-  musicUrl: '/A Sky Full of Stars Coldplay violin cover.mp3',
+  musicUrl: musicUrl('A Sky Full of Stars Coldplay violin cover.mp3'),
   footerQuote: "I have found the one whom my soul loves.",
   footerQuoteAuthor: 'Song of Solomon 3:4',
   passwordHash: undefined,
