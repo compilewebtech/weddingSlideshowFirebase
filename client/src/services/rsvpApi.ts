@@ -1,6 +1,9 @@
 import { apiFetch } from '../hooks/useApi';
 import type { Guest } from '../types';
 
+const isDev = import.meta.env.DEV;
+const API_URL = isDev ? '' : 'https://us-central1-wedding-invitation-slideshow.cloudfunctions.net/api';
+
 export interface RsvpFormData {
   name: string;
   email: string;
@@ -27,7 +30,7 @@ async function rsvpFetch(url: string, options: RequestInit): Promise<Response> {
 }
 
 function apiPath(path: string): string {
-  return `/api${path}`;
+  return API_URL ? `${API_URL}${path}` : `/api${path}`;
 }
 
 export async function sendOtp(weddingId: string, data: RsvpFormData): Promise<void> {

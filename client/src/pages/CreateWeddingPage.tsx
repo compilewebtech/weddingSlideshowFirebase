@@ -78,8 +78,10 @@ export function CreateWeddingPage() {
     setError('');
     setLoading(true);
     submittingRef.current = true;
+    let weddingCreated = false;
     try {
       const wedding = await createWedding(user.uid, form);
+      weddingCreated = true;
       // If Gold, upload the Excel file after creating the wedding
       if (form.package === 'gold' && excelFile) {
         await uploadGuestExcel(wedding.id, excelFile);
@@ -87,13 +89,17 @@ export function CreateWeddingPage() {
       navigate('/admin');
     } catch (err: unknown) {
       submittingRef.current = false;
-      const message =
+      const baseMessage =
         err instanceof Error
           ? err.message
           : typeof err === 'object' && err !== null && 'message' in err
             ? String((err as { message: unknown }).message)
             : 'Failed to create wedding. Check Firestore rules are deployed.';
+      const message = weddingCreated
+        ? `Wedding was created, but the guest list upload failed: ${baseMessage}. You can retry the upload from the Edit page.`
+        : baseMessage;
       setError(message);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
