@@ -250,6 +250,30 @@ router.post('/rsvp-direct', validateGuest, async (req: Request<{ weddingId: stri
   }
 });
 
+/** Public dashboard read — requires the wedding's passwordHash to match. */
+router.post('/dashboard', async (req: Request<{ weddingId: string }>, res: Response) => {
+  try {
+    const { weddingId } = req.params;
+    const { passwordHash } = req.body || {};
+    if (!passwordHash || typeof passwordHash !== 'string') {
+      return res.status(400).json({ error: 'passwordHash is required' });
+    }
+    const wedding = await WeddingModel.findById(weddingId);
+    if (!wedding) return res.status(404).json({ error: 'Wedding not found' });
+    if (!wedding.passwordHash) {
+      return res.status(403).json({ error: 'Dashboard access has not been configured' });
+    }
+    if (wedding.passwordHash !== passwordHash) {
+      return res.status(401).json({ error: 'Incorrect password' });
+    }
+    const guests = await GuestModel.findAll(weddingId);
+    return res.json({ guests });
+  } catch (error) {
+    console.error('Error fetching dashboard guests:', error);
+    return res.status(500).json({ error: 'Failed to fetch guests' });
+  }
+});
+
 router.get('/', requireAuth, async (req: Request<{ weddingId: string }>, res: Response) => {
   try {
     const wedding = await requireWeddingExists(req, res);

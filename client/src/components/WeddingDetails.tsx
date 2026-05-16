@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Clock, Heart } from 'lucide-react';
+import { Calendar, MapPin, Clock, Heart, Moon, Home } from 'lucide-react';
 import { useWeddingContext } from '../contexts/WeddingContext';
 
 export const WeddingDetails = () => {
@@ -103,6 +103,112 @@ export const WeddingDetails = () => {
             </motion.div>
           ))}
         </div>
+
+        {wedding.showHouseLocations && (wedding.brideHouseLocation || wedding.groomHouseLocation) && (
+          <div className="mt-16">
+            <motion.div
+              className="text-center mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <span className="font-montserrat text-xs tracking-[0.3em] text-gold uppercase">
+                Visit Us Before The Ceremony
+              </span>
+              <h3 className="font-script text-4xl md:text-5xl text-charcoal mt-3">
+                Where We're Staying
+              </h3>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              {[
+                {
+                  title: "Bride's Location",
+                  address: wedding.brideHouseLocation,
+                  url: wedding.brideHouseLocationUrl,
+                  until: wedding.brideHouseVisitUntil,
+                },
+                {
+                  title: "Groom's Location",
+                  address: wedding.groomHouseLocation,
+                  url: wedding.groomHouseLocationUrl,
+                  until: wedding.groomHouseVisitUntil,
+                },
+              ]
+                .filter((h) => h.address)
+                .map((house, index) => (
+                  <motion.div
+                    key={house.title}
+                    className="relative group"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: index * 0.2 }}
+                  >
+                    <div className="bg-white p-10 text-center border border-gold/20 hover:border-gold/40 transition-all duration-500 hover:shadow-xl">
+                      <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                        <Home className="w-7 h-7 text-gold" />
+                      </div>
+                      <h3 className="font-montserrat text-sm tracking-[0.2em] text-gold uppercase mb-4">
+                        {house.title}
+                      </h3>
+                      <p className="font-cormorant text-2xl text-charcoal mb-2">
+                        {house.address}
+                      </p>
+                      {house.until && (
+                        <p className="font-cormorant text-lg text-charcoal/60 italic">
+                          {house.until}
+                        </p>
+                      )}
+                      {house.url && (
+                        <a
+                          href={house.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-4 font-montserrat text-xs tracking-widest text-gold uppercase underline underline-offset-4 hover:text-gold/70 transition-colors"
+                        >
+                          Get Directions
+                        </a>
+                      )}
+
+                      <div className="absolute top-4 left-4 w-6 h-6 border-l border-t border-gold/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute top-4 right-4 w-6 h-6 border-r border-t border-gold/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute bottom-4 left-4 w-6 h-6 border-l border-b border-gold/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute bottom-4 right-4 w-6 h-6 border-r border-b border-gold/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </motion.div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {wedding.showSleepMessage && (
+          <motion.div
+            className="mt-16 text-center max-w-3xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="bg-white/60 border border-gold/20 px-8 py-10 relative">
+              <Moon className="w-10 h-10 text-gold mx-auto mb-4" />
+              {wedding.sleepMessageLang === 'ar' ? (
+                <p
+                  className="font-cormorant text-2xl md:text-3xl text-charcoal leading-relaxed"
+                  dir="rtl"
+                  lang="ar"
+                >
+                  نوماً هنيئاً لأطفالكم
+                </p>
+              ) : (
+                <p className="font-cormorant text-2xl md:text-3xl italic text-charcoal leading-relaxed">
+                  We hope your little ones enjoy a peaceful night's sleep while you celebrate with us
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         {(wedding.quoteText || wedding.quoteAuthor) && (
           <motion.div

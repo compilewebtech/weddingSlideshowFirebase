@@ -57,4 +57,18 @@ export interface Wedding {
   package?: 'silver' | 'gold';
   /** Whether to send thank-you email to guests after RSVP */
   sendThankYou?: boolean;
+
+  /** Show "sleep well" message for kids */
+  showSleepMessage?: boolean;
+  /** Language for the sleep message */
+  sleepMessageLang?: 'en' | 'ar';
+
+  /** Show bride/groom houses card */
+  showHouseLocations?: boolean;
+  brideHouseLocation?: string;
+  brideHouseLocationUrl?: string;
+  brideHouseVisitUntil?: string;
+  groomHouseLocation?: string;
+  groomHouseLocationUrl?: string;
+  groomHouseVisitUntil?: string;
 }

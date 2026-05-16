@@ -493,6 +493,119 @@ export function EditWeddingPage() {
             </div>
           </section>
 
+          {/* Sleep Message Toggle */}
+          <section className="bg-white p-6 rounded-lg border border-gold/20">
+            <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
+              Kids Sleep Message
+            </h2>
+            <label className="flex items-center gap-3 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={form.showSleepMessage || false}
+                onChange={(e) => update('showSleepMessage', e.target.checked)}
+                className="w-5 h-5 text-gold rounded"
+              />
+              <span className="font-montserrat text-sm">
+                Show "peaceful night's sleep" message for guests' children
+              </span>
+            </label>
+            {form.showSleepMessage && (
+              <div>
+                <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
+                  Language
+                </label>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="sleepMessageLang"
+                      checked={(form.sleepMessageLang || 'en') === 'en'}
+                      onChange={() => update('sleepMessageLang', 'en')}
+                      className="text-gold"
+                    />
+                    <span className="font-montserrat text-sm">English</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="sleepMessageLang"
+                      checked={form.sleepMessageLang === 'ar'}
+                      onChange={() => update('sleepMessageLang', 'ar')}
+                      className="text-gold"
+                    />
+                    <span className="font-montserrat text-sm">Arabic</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* House Locations Toggle */}
+          <section className="bg-white p-6 rounded-lg border border-gold/20">
+            <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
+              Bride & Groom Houses
+            </h2>
+            <label className="flex items-center gap-3 cursor-pointer mb-4">
+              <input
+                type="checkbox"
+                checked={form.showHouseLocations || false}
+                onChange={(e) => update('showHouseLocations', e.target.checked)}
+                className="w-5 h-5 text-gold rounded"
+              />
+              <span className="font-montserrat text-sm">
+                Show bride's & groom's house locations with directions and max visit time
+              </span>
+            </label>
+            {form.showHouseLocations && (
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <h3 className="font-cormorant text-lg text-charcoal">Bride's House</h3>
+                  <input
+                    value={form.brideHouseLocation || ''}
+                    onChange={(e) => update('brideHouseLocation', e.target.value)}
+                    placeholder="Bride's house address"
+                    className="w-full px-4 py-3 border border-charcoal/20"
+                  />
+                  <input
+                    type="url"
+                    value={form.brideHouseLocationUrl || ''}
+                    onChange={(e) => update('brideHouseLocationUrl', e.target.value)}
+                    placeholder="Google Maps URL"
+                    className="w-full px-4 py-3 border border-charcoal/20"
+                  />
+                  <input
+                    value={form.brideHouseVisitUntil || ''}
+                    onChange={(e) => update('brideHouseVisitUntil', e.target.value)}
+                    placeholder="Max time to visit (e.g. Until 2:00 PM)"
+                    className="w-full px-4 py-3 border border-charcoal/20"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <h3 className="font-cormorant text-lg text-charcoal">Groom's House</h3>
+                  <input
+                    value={form.groomHouseLocation || ''}
+                    onChange={(e) => update('groomHouseLocation', e.target.value)}
+                    placeholder="Groom's house address"
+                    className="w-full px-4 py-3 border border-charcoal/20"
+                  />
+                  <input
+                    type="url"
+                    value={form.groomHouseLocationUrl || ''}
+                    onChange={(e) => update('groomHouseLocationUrl', e.target.value)}
+                    placeholder="Google Maps URL"
+                    className="w-full px-4 py-3 border border-charcoal/20"
+                  />
+                  <input
+                    value={form.groomHouseVisitUntil || ''}
+                    onChange={(e) => update('groomHouseVisitUntil', e.target.value)}
+                    placeholder="Max time to visit (e.g. Until 3:00 PM)"
+                    className="w-full px-4 py-3 border border-charcoal/20"
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+
           <section className="bg-white p-6 rounded-lg border border-gold/20">
             <h2 className="font-montserrat text-sm tracking-widest text-gold uppercase mb-4">
               Quotes & RSVP

@@ -30,4 +30,6 @@ export interface Wedding {
   package?: 'silver' | 'gold';
   /** Whether to send thank-you email to guests after RSVP */
   sendThankYou?: boolean;
+  /** SHA-256 hash of the dashboard password */
+  passwordHash?: string;
 }

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import * as XLSX from 'xlsx';
 import {
   FileSpreadsheet,
   Users,
@@ -14,7 +15,8 @@ import {
   Link2,
 } from 'lucide-react';
 import { useWedding } from '../hooks/useWeddings';
-import { useGuests } from '../hooks/useGuests';
+import { fetchDashboardGuests } from '../services/rsvpApi';
+import type { Guest } from '../types';
 import { WeddingProvider } from '../contexts/WeddingContext';
 import { hashPassword } from '../utils/password';
 import {
@@ -26,7 +28,8 @@ import {
 function DashboardContent() {
   const { id } = useParams<{ id: string }>();
   const { wedding } = useWedding(id || null);
-  const { guests, exportToExcel, stats } = useGuests(id || null);
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [guestsError, setGuestsError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -36,6 +39,109 @@ function DashboardContent() {
 
   // Auth: password-only, no admin bypass
   const hasPasswordAuth = !!(wedding?.id && wedding?.passwordHash && isWeddingAuthenticated(wedding.id, wedding.passwordHash));
+
+  // Fetch guests via password-authenticated API (works for the couple, not only the wedding creator)
+  useEffect(() => {
+    if (!wedding?.id || !wedding.passwordHash || !hasPasswordAuth) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { guests: fetched } = await fetchDashboardGuests(wedding.id, wedding.passwordHash!);
+        if (cancelled) return;
+        const sorted = [...fetched].sort((a, b) => {
+          if (a.attending === 'pending' && b.attending !== 'pending') return 1;
+          if (a.attending !== 'pending' && b.attending === 'pending') return -1;
+          return new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime();
+        });
+        setGuests(sorted);
+        setGuestsError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setGuestsError(err instanceof Error ? err.message : 'Failed to load guests');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [wedding?.id, wedding?.passwordHash, hasPasswordAuth]);
+
+  const stats = useMemo(() => {
+    let attending = 0;
+    let notAttending = 0;
+    let pendingCount = 0;
+    let totalInvited = 0;
+    let totalGuestsAttending = 0;
+    for (const g of guests) {
+      if (g.guestAttending?.length) {
+        const yesCount = g.guestAttending.filter((a) => a === 'yes').length;
+        const noCount = g.guestAttending.filter((a) => a === 'no').length;
+        attending += yesCount;
+        notAttending += noCount;
+        totalInvited += g.guestAttending.length;
+        totalGuestsAttending += yesCount;
+      } else if (g.attending === 'yes') {
+        attending++;
+        totalInvited++;
+        totalGuestsAttending += g.numberOfGuests || 1;
+      } else if (g.attending === 'no') {
+        notAttending++;
+        totalInvited++;
+      } else if (g.attending === 'pending') {
+        pendingCount++;
+        totalInvited++;
+      }
+    }
+    return { totalInvited, attending, notAttending, pendingCount, totalGuestsAttending };
+  }, [guests]);
+
+  const exportToExcel = useCallback(() => {
+    const guestRows: Record<string, string | number>[] = [];
+    let rowNum = 1;
+    for (const guest of guests) {
+      if (guest.guestAttending?.length && guest.guestNames?.length) {
+        for (let i = 0; i < guest.guestNames.length; i++) {
+          guestRows.push({
+            '#': rowNum++,
+            Name: guest.guestNames[i] || '',
+            Email: i === 0 ? (guest.email || '') : '',
+            Attending: guest.guestAttending[i] === 'yes' ? 'Yes' : 'No',
+            'Dietary Restrictions': i === 0 ? (guest.dietaryRestrictions || '') : '',
+            Message: i === 0 ? (guest.message || '') : '',
+            'Submitted At': i === 0 && guest.submittedAt ? new Date(guest.submittedAt).toLocaleString() : '',
+          });
+        }
+      } else {
+        guestRows.push({
+          '#': rowNum++,
+          Name: guest.firstName ? `${guest.firstName} ${guest.lastName || ''}` : guest.name,
+          Email: guest.email || '',
+          Attending: guest.attending === 'yes' ? 'Yes' : guest.attending === 'no' ? 'No' : 'Pending',
+          'Dietary Restrictions': guest.dietaryRestrictions || '',
+          Message: guest.message || '',
+          'Submitted At': guest.submittedAt ? new Date(guest.submittedAt).toLocaleString() : '',
+        });
+      }
+    }
+    const empty = { '#': '', Name: '', Email: '', Attending: '', 'Dietary Restrictions': '', Message: '', 'Submitted At': '' };
+    const statsRows = [
+      { ...empty },
+      { ...empty, Name: 'Summary' },
+      { ...empty, Name: 'Total Invited', Attending: String(stats.totalInvited) },
+      { ...empty, Name: 'Attending', Attending: String(stats.attending) },
+      { ...empty, Name: 'Declined', Attending: String(stats.notAttending) },
+      ...(stats.pendingCount > 0 ? [{ ...empty, Name: 'Pending', Attending: String(stats.pendingCount) }] : []),
+      { ...empty, Name: 'Total Guests Attending', Attending: String(stats.totalGuestsAttending) },
+    ];
+    const exportData = [...guestRows, ...statsRows];
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const colWidths = Object.keys(exportData[0] || {}).map((key) => ({
+      wch: Math.max(key.length, ...exportData.map((row) => String((row as Record<string, unknown>)[key] || '').length)) + 2,
+    }));
+    ws['!cols'] = colWidths;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Guests');
+    XLSX.writeFile(wb, `wedding-guests-${id}-${new Date().toISOString().split('T')[0]}.xlsx`);
+  }, [guests, stats, id]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,6 +301,12 @@ function DashboardContent() {
             <p className="font-montserrat text-xs text-charcoal/60 uppercase">Total Attending</p>
           </div>
         </div>
+
+        {guestsError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 font-montserrat text-sm">
+            {guestsError}
+          </div>
+        )}
 
         {/* Export only */}
         <div className="flex flex-wrap items-center gap-4 mb-6">

@@ -137,6 +137,23 @@ export async function submitGoldRsvp(
   }
 }
 
+/** Dashboard: fetch guests using the wedding password hash (no Firebase auth). */
+export async function fetchDashboardGuests(
+  weddingId: string,
+  passwordHash: string
+): Promise<{ guests: Guest[] }> {
+  const res = await rsvpFetch(apiPath(`/weddings/${weddingId}/guests/dashboard`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ passwordHash }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.error || 'Failed to load dashboard');
+  }
+  return json;
+}
+
 /** Gold: Upload guest Excel file (auth required) */
 export async function uploadGuestExcel(
   weddingId: string,
