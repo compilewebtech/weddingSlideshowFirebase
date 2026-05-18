@@ -464,14 +464,21 @@ router.post('/upload-excel', requireAuth, async (req: Request<{ weddingId: strin
       const toCreateInGroup = newInGroup.filter((g) => !pendingByKey.has(matchKey(g.firstName, g.lastName)));
       if (toCreateInGroup.length === 0) continue;
 
-      if (toCreateInGroup.length === 1) {
-        // Solo guest
+      if (toCreateInGroup.length === 1 && group.length === 1) {
+        // Genuinely solo guest in the Excel
         const g = toCreateInGroup[0];
         toCreate.push({ ...g, guestToken: generateSlugToken(g.firstName, g.lastName) });
-      } else {
-        // Group — shared token and groupId
+      } else if (toCreateInGroup.length === 1) {
+        // One new guest joining a group whose other members already exist as
+        // pending. Assign a groupId now so the re-group pass below can link
+        // the existing pending members onto it.
         const groupId = crypto.randomUUID();
-        const sharedToken = generateGroupSlugToken(toCreateInGroup);
+        const sharedToken = generateGroupSlugToken(group);
+        toCreate.push({ ...toCreateInGroup[0], guestToken: sharedToken, groupId });
+      } else {
+        // Multiple new guests — shared token and groupId
+        const groupId = crypto.randomUUID();
+        const sharedToken = generateGroupSlugToken(group);
         for (const g of toCreateInGroup) {
           toCreate.push({ ...g, guestToken: sharedToken, groupId });
         }
