@@ -22,6 +22,8 @@ export function EditWeddingPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState('');
+  const [changePassword, setChangePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [excelPreview, setExcelPreview] = useState<Array<{ firstName: string; lastName: string }>>([]);
   const [uploadResult, setUploadResult] = useState<{ added: number; preserved: number; removed: number } | null>(null);
@@ -77,16 +79,23 @@ export function EditWeddingPage() {
     setError('');
     setSaving(true);
     try {
-      const { id: _id, createdBy: _cb, createdAt: _ct, ...data } = form;
+      const { id: _id, createdBy: _cb, createdAt: _ct, ...rest } = form as Partial<Wedding>;
+      const data: Partial<Wedding> & { password?: string } = rest;
+      // Strip any stale "password" key that snuck in via form spread. The
+      // password field on this page is opt-in via the "Change password"
+      // checkbox; we only send a new password when the user explicitly typed one.
+      delete data.password;
+      if (changePassword && newPassword.trim()) {
+        data.password = newPassword;
+      }
       await updateWedding(id, user.uid, data);
-      // If Gold and Excel file uploaded, process it
       if (isGold && excelFile) {
         const result = await uploadGuestExcel(id, excelFile);
         setUploadResult({ added: result.added, preserved: result.preserved, removed: result.removed });
         setExcelFile(null);
         setExcelPreview([]);
       }
-      if (!excelFile) navigate('/admin');
+      navigate('/admin');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update wedding');
     } finally {
@@ -310,13 +319,36 @@ export function EditWeddingPage() {
                 <label className="block font-montserrat text-xs text-charcoal/70 uppercase mb-2">
                   Access Password
                 </label>
-                <input
-                  type="password"
-                  value={(form as { password?: string }).password || ''}
-                  onChange={(e) => update('password' as keyof Wedding, e.target.value)}
-                  className="w-full px-4 py-3 border border-charcoal/20"
-                  placeholder="Leave blank to keep current • For couple to view RSVPs"
-                />
+                <label className="flex items-center gap-2 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={changePassword}
+                    onChange={(e) => {
+                      setChangePassword(e.target.checked);
+                      if (!e.target.checked) setNewPassword('');
+                    }}
+                    className="w-4 h-4 text-gold"
+                  />
+                  <span className="font-montserrat text-sm text-charcoal/70">
+                    Change the dashboard password
+                  </span>
+                </label>
+                {changePassword && (
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-4 py-3 border border-charcoal/20"
+                    placeholder="Type the new password"
+                    autoComplete="new-password"
+                    name="wedding-new-access-password"
+                    data-form-type="other"
+                    data-lpignore="true"
+                  />
+                )}
+                <p className="mt-1 font-montserrat text-xs text-charcoal/50">
+                  The current password stays the same unless you check the box and enter a new one.
+                </p>
               </div>
             </div>
           </section>

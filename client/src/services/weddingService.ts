@@ -40,9 +40,14 @@ export async function updateWedding(
   const payload: Record<string, unknown> = Object.fromEntries(
     Object.entries(data).filter(([, v]) => v !== undefined)
   );
-  if ('password' in data && typeof (data as { password?: string }).password === 'string') {
+  // Only set passwordHash if the caller passed a non-empty, non-whitespace
+  // password. Empty/blank/undefined leaves the existing password intact
+  // (this prevents browser autofill or accidental clears from wiping it).
+  if ('password' in data) {
     const pw = (data as { password?: string }).password;
-    payload.passwordHash = pw ? await hashPassword(pw) : null;
+    if (typeof pw === 'string' && pw.trim()) {
+      payload.passwordHash = await hashPassword(pw);
+    }
     delete (payload as { password?: string }).password;
   }
   const docRef = doc(db, 'weddings', weddingId);
