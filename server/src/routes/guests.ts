@@ -438,88 +438,192 @@ router.post('/upload-excel', requireAuth, async (req: Request<{ weddingId: strin
       return res.status(400).json({ error: `Too many guests (${totalGuests}). Maximum is 500 per upload.` });
     }
 
-    // Merge logic: preserve responded guests, update pending
+    // ------------------------------------------------------------------
+    // Re-upload matching: each Excel row is its own person, even when the
+    // client's Excel has duplicate names across families. Match each row
+    // against an existing pending/responded guest using a 5-step lookup.
+    // ------------------------------------------------------------------
     const existingGuests = await GuestModel.findAll(weddingId);
     const respondedGuests = existingGuests.filter((g) => g.attending !== 'pending');
     const pendingGuests = existingGuests.filter((g) => g.attending === 'pending');
 
-    const matchKey = (fn: string, ln: string) => `${fn.toLowerCase().trim()}|${ln.toLowerCase().trim()}`;
-    const respondedKeys = new Set(respondedGuests.map((g) => matchKey(g.firstName || '', g.lastName || '')));
-    const pendingByKey = new Map(pendingGuests.map((g) => [matchKey(g.firstName || '', g.lastName || ''), g]));
+    const nameKey = (fn: string, ln: string) =>
+      `${(fn || '').toLowerCase().trim()}|${(ln || '').toLowerCase().trim()}`;
 
-    const toCreate: Array<{ firstName: string; lastName: string; guestToken: string; groupId?: string }> = [];
-    const keepPendingIds = new Set<string>();
+    /** "lastname|firstname::lastname|firstname::..." sorted, identifies a "family" */
+    const computeSignature = (members: Array<{ firstName: string; lastName: string }>) =>
+      members
+        .map((m) => `${(m.lastName || '').toLowerCase().trim()}|${(m.firstName || '').toLowerCase().trim()}`)
+        .sort()
+        .join('::');
 
-    for (const group of groups) {
-      // Filter out already-responded guests from this group
-      const newInGroup = group.filter((g) => !respondedKeys.has(matchKey(g.firstName, g.lastName)));
+    /** Jaccard similarity between two group signatures (0..1) */
+    const signatureOverlap = (a: string, b: string): number => {
+      if (!a || !b) return 0;
+      const sa = new Set(a.split('::'));
+      const sb = new Set(b.split('::'));
+      let inter = 0;
+      for (const x of sa) if (sb.has(x)) inter++;
+      const union = sa.size + sb.size - inter;
+      return union ? inter / union : 0;
+    };
 
-      // Keep existing pending guests
-      for (const g of group) {
-        const existing = pendingByKey.get(matchKey(g.firstName, g.lastName));
-        if (existing) keepPendingIds.add(existing.id);
+    type Candidate = typeof existingGuests[number];
+    const claimed = new Set<string>();
+    /** Find an existing guest doc that this Excel row should reuse. */
+    const findCandidate = (
+      member: { firstName: string; lastName: string },
+      signature: string,
+      position: number,
+      pool: Candidate[]
+    ): Candidate | null => {
+      const key = nameKey(member.firstName, member.lastName);
+      // 1. exact: name + signature + position
+      for (const c of pool) {
+        if (claimed.has(c.id)) continue;
+        if (nameKey(c.firstName || '', c.lastName || '') !== key) continue;
+        if (c.groupSignature === signature && c.positionInGroup === position) return c;
+      }
+      // 2. group-stable: name + signature
+      for (const c of pool) {
+        if (claimed.has(c.id)) continue;
+        if (nameKey(c.firstName || '', c.lastName || '') !== key) continue;
+        if (c.groupSignature === signature) return c;
+      }
+      // 3. group-mutated: name + 50%+ family overlap
+      for (const c of pool) {
+        if (claimed.has(c.id)) continue;
+        if (nameKey(c.firstName || '', c.lastName || '') !== key) continue;
+        if (!c.groupSignature) continue;
+        if (signatureOverlap(c.groupSignature, signature) >= 0.5) return c;
+      }
+      // 4. loose: only one unclaimed namesake (covers legacy docs without a signature)
+      const namesakes = pool.filter(
+        (c) => !claimed.has(c.id) && nameKey(c.firstName || '', c.lastName || '') === key
+      );
+      if (namesakes.length === 1) return namesakes[0];
+      return null;
+    };
+
+    type RowAction =
+      | { kind: 'reuse-pending'; doc: Candidate }
+      | { kind: 'skip-responded'; doc: Candidate }
+      | { kind: 'create' };
+
+    type AnnotatedRow = {
+      member: { firstName: string; lastName: string };
+      groupIndex: number;
+      positionInGroup: number;
+      signature: string;
+      action: RowAction;
+    };
+
+    const annotated: AnnotatedRow[] = [];
+    for (let gi = 0; gi < groups.length; gi++) {
+      const group = groups[gi];
+      const signature = computeSignature(group);
+      for (let pi = 0; pi < group.length; pi++) {
+        const member = group[pi];
+        // Prefer responded matches first so already-RSVPed guests aren't deleted/recreated
+        let action: RowAction;
+        const responded = findCandidate(member, signature, pi, respondedGuests);
+        if (responded) {
+          claimed.add(responded.id);
+          action = { kind: 'skip-responded', doc: responded };
+        } else {
+          const pending = findCandidate(member, signature, pi, pendingGuests);
+          if (pending) {
+            claimed.add(pending.id);
+            action = { kind: 'reuse-pending', doc: pending };
+          } else {
+            action = { kind: 'create' };
+          }
+        }
+        annotated.push({ member, groupIndex: gi, positionInGroup: pi, signature, action });
+      }
+    }
+
+    // Assign a shared groupId + token per Excel group (covers reused + new rows
+    // alike, so a family's invite link is stable on re-upload when the family
+    // composition is stable).
+    const rowsByGroup = new Map<number, AnnotatedRow[]>();
+    for (const r of annotated) {
+      if (!rowsByGroup.has(r.groupIndex)) rowsByGroup.set(r.groupIndex, []);
+      rowsByGroup.get(r.groupIndex)!.push(r);
+    }
+
+    const toCreate: Array<{
+      firstName: string;
+      lastName: string;
+      guestToken: string;
+      groupId?: string;
+      groupSignature?: string;
+      positionInGroup?: number;
+    }> = [];
+    const pendingUpdates: Array<{
+      id: string;
+      groupId: string;
+      guestToken: string;
+      groupSignature: string;
+      positionInGroup: number;
+    }> = [];
+
+    for (const [gi, rows] of rowsByGroup.entries()) {
+      const group = groups[gi];
+      // Filter out responded rows when picking shared groupId/token — responded
+      // guests keep whatever token they already had so their existing invite
+      // link never changes.
+      const reusableRows = rows.filter((r) => r.action.kind !== 'skip-responded');
+      if (reusableRows.length === 0) continue;
+
+      // Decide token + groupId for this Excel group
+      let sharedGroupId: string;
+      let sharedToken: string;
+      const reusedPending = reusableRows.find((r) => r.action.kind === 'reuse-pending');
+      if (reusedPending && reusedPending.action.kind === 'reuse-pending' && reusedPending.action.doc.groupId && reusedPending.action.doc.guestToken) {
+        // Reuse the existing group's identity so links stay stable
+        sharedGroupId = reusedPending.action.doc.groupId;
+        sharedToken = reusedPending.action.doc.guestToken;
+      } else {
+        sharedGroupId = crypto.randomUUID();
+        sharedToken = reusableRows.length === 1 && group.length === 1
+          ? generateSlugToken(reusableRows[0].member.firstName, reusableRows[0].member.lastName)
+          : generateGroupSlugToken(group);
       }
 
-      // Only create truly new guests
-      const toCreateInGroup = newInGroup.filter((g) => !pendingByKey.has(matchKey(g.firstName, g.lastName)));
-      if (toCreateInGroup.length === 0) continue;
-
-      if (toCreateInGroup.length === 1 && group.length === 1) {
-        // Genuinely solo guest in the Excel
-        const g = toCreateInGroup[0];
-        toCreate.push({ ...g, guestToken: generateSlugToken(g.firstName, g.lastName) });
-      } else if (toCreateInGroup.length === 1) {
-        // One new guest joining a group whose other members already exist as
-        // pending. Assign a groupId now so the re-group pass below can link
-        // the existing pending members onto it.
-        const groupId = crypto.randomUUID();
-        const sharedToken = generateGroupSlugToken(group);
-        toCreate.push({ ...toCreateInGroup[0], guestToken: sharedToken, groupId });
-      } else {
-        // Multiple new guests — shared token and groupId
-        const groupId = crypto.randomUUID();
-        const sharedToken = generateGroupSlugToken(group);
-        for (const g of toCreateInGroup) {
-          toCreate.push({ ...g, guestToken: sharedToken, groupId });
+      for (const row of reusableRows) {
+        if (row.action.kind === 'reuse-pending') {
+          pendingUpdates.push({
+            id: row.action.doc.id,
+            groupId: sharedGroupId,
+            guestToken: sharedToken,
+            groupSignature: row.signature,
+            positionInGroup: row.positionInGroup,
+          });
+        } else if (row.action.kind === 'create') {
+          toCreate.push({
+            firstName: row.member.firstName,
+            lastName: row.member.lastName,
+            guestToken: sharedToken,
+            groupId: sharedGroupId,
+            groupSignature: row.signature,
+            positionInGroup: row.positionInGroup,
+          });
         }
       }
     }
 
-    // Also re-group existing pending guests that are now in a group from the Excel
-    // (update their groupId/token to match new group members if applicable)
-    for (const group of groups) {
-      if (group.length < 2) continue;
-      // Collect all pending IDs in this group (both existing + newly created will share token)
-      const pendingIdsInGroup: string[] = [];
-      for (const g of group) {
-        const existing = pendingByKey.get(matchKey(g.firstName, g.lastName));
-        if (existing) pendingIdsInGroup.push(existing.id);
-      }
-      // Find if there are new guests being created for this group
-      const newInGroup = toCreate.filter((tc) =>
-        group.some((g) => matchKey(g.firstName, g.lastName) === matchKey(tc.firstName, tc.lastName))
-      );
-      if (pendingIdsInGroup.length > 0 && newInGroup.length > 0 && newInGroup[0].groupId) {
-        // Update existing pending guests to share the new group's token/groupId
-        await GuestModel.updateGroupId(weddingId, pendingIdsInGroup, newInGroup[0].groupId, newInGroup[0].guestToken);
-      } else if (pendingIdsInGroup.length >= 2) {
-        // All members already exist as pending — group them together
-        const groupId = crypto.randomUUID();
-        const members = pendingIdsInGroup.map((pid) => {
-          const g = pendingGuests.find((pg) => pg.id === pid)!;
-          return { firstName: g.firstName || '', lastName: g.lastName || '' };
-        });
-        const sharedToken = generateGroupSlugToken(members);
-        await GuestModel.updateGroupId(weddingId, pendingIdsInGroup, groupId, sharedToken);
-      }
-    }
-
-    // Delete pending guests not in the new file
-    const allKeepIds = new Set([
-      ...respondedGuests.map((g) => g.id),
-      ...keepPendingIds,
+    // Delete pending guests not claimed by any Excel row
+    const keepIds = new Set<string>([
+      ...respondedGuests.map((g) => g.id), // never touch responded
+      ...pendingUpdates.map((u) => u.id),
     ]);
-    const removed = await GuestModel.deletePendingNotInList(weddingId, allKeepIds);
+    const removed = await GuestModel.deletePendingNotInList(weddingId, keepIds);
+
+    // Apply updates to surviving pending guests
+    if (pendingUpdates.length > 0) {
+      await GuestModel.updateGroupMeta(weddingId, pendingUpdates);
+    }
 
     // Create new guests
     let created: Awaited<ReturnType<typeof GuestModel.createBatch>> = [];
@@ -531,7 +635,7 @@ router.post('/upload-excel', requireAuth, async (req: Request<{ weddingId: strin
 
     return res.json({
       added: created.length,
-      preserved: respondedGuests.length,
+      preserved: respondedGuests.length + pendingUpdates.length,
       removed,
       total: finalGuests.length,
       guests: finalGuests,

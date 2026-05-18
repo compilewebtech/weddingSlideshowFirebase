@@ -20,6 +20,16 @@ export interface GuestDoc {
   lastName?: string;
   groupId?: string;
   guestToken?: string;
+
+  /**
+   * Sorted "lastName|firstName" list of every guest in this guest's Excel
+   * group, joined by "::". Lets the re-upload step recognise the *same family*
+   * even when a guest's name is duplicated across groups. Populated by the
+   * Excel upload; legacy guests without it are matched via the loose fallback.
+   */
+  groupSignature?: string;
+  /** Index of this guest inside their Excel group (0-based). */
+  positionInGroup?: number;
 }
 
 function getGuestsCollection(weddingId: string) {
@@ -81,7 +91,14 @@ export const GuestModel = {
   /** Gold: batch-create multiple guest docs from Excel upload */
   async createBatch(
     weddingId: string,
-    guests: Array<{ firstName: string; lastName: string; guestToken: string; groupId?: string }>
+    guests: Array<{
+      firstName: string;
+      lastName: string;
+      guestToken: string;
+      groupId?: string;
+      groupSignature?: string;
+      positionInGroup?: number;
+    }>
   ): Promise<GuestDoc[]> {
     const col = getGuestsCollection(weddingId);
     const created: GuestDoc[] = [];
@@ -96,7 +113,7 @@ export const GuestModel = {
       for (const g of chunk) {
         const ref = col.doc();
         refs.push(ref);
-        batch.set(ref, {
+        const payload: Record<string, unknown> = {
           firstName: g.firstName,
           lastName: g.lastName,
           name: `${g.firstName} ${g.lastName}`,
@@ -106,7 +123,10 @@ export const GuestModel = {
           numberOfGuests: 1,
           submittedAt: '',
           createdAt: FieldValue.serverTimestamp(),
-        });
+        };
+        if (g.groupSignature !== undefined) payload.groupSignature = g.groupSignature;
+        if (g.positionInGroup !== undefined) payload.positionInGroup = g.positionInGroup;
+        batch.set(ref, payload);
       }
 
       await batch.commit();
@@ -118,6 +138,28 @@ export const GuestModel = {
     }
 
     return created;
+  },
+
+  /** Update the Excel-position metadata on existing pending guests. */
+  async updateGroupMeta(
+    weddingId: string,
+    updates: Array<{ id: string; groupId: string; guestToken: string; groupSignature: string; positionInGroup: number }>
+  ): Promise<void> {
+    const col = getGuestsCollection(weddingId);
+    const batchSize = 450;
+    for (let i = 0; i < updates.length; i += batchSize) {
+      const chunk = updates.slice(i, i + batchSize);
+      const batch = db.batch();
+      for (const u of chunk) {
+        batch.update(col.doc(u.id), {
+          groupId: u.groupId,
+          guestToken: u.guestToken,
+          groupSignature: u.groupSignature,
+          positionInGroup: u.positionInGroup,
+        });
+      }
+      await batch.commit();
+    }
   },
 
   /** Gold: find guests by personalized token */
