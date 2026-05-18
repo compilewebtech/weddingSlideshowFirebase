@@ -140,6 +140,27 @@ export const GuestModel = {
     return created;
   },
 
+  /** Backfill only the Excel-position metadata on responded guests — never
+   *  touches groupId or guestToken, so their RSVP link stays valid. */
+  async updateRespondedMeta(
+    weddingId: string,
+    updates: Array<{ id: string; groupSignature: string; positionInGroup: number }>
+  ): Promise<void> {
+    const col = getGuestsCollection(weddingId);
+    const batchSize = 450;
+    for (let i = 0; i < updates.length; i += batchSize) {
+      const chunk = updates.slice(i, i + batchSize);
+      const batch = db.batch();
+      for (const u of chunk) {
+        batch.update(col.doc(u.id), {
+          groupSignature: u.groupSignature,
+          positionInGroup: u.positionInGroup,
+        });
+      }
+      await batch.commit();
+    }
+  },
+
   /** Update the Excel-position metadata on existing pending guests. */
   async updateGroupMeta(
     weddingId: string,
@@ -162,12 +183,24 @@ export const GuestModel = {
     }
   },
 
-  /** Gold: find guests by personalized token */
+  /** Gold: find guests by personalized token, ordered by their Excel position */
   async findByToken(weddingId: string, token: string): Promise<GuestDoc[]> {
     const snapshot = await getGuestsCollection(weddingId)
       .where('guestToken', '==', token)
       .get();
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as GuestDoc[];
+    const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as GuestDoc[];
+    // Show guests in the order they appear in the Excel (e.g. man first, by the
+    // client's choice). Fall back to createdAt for legacy docs without positionInGroup.
+    return docs.sort((a, b) => {
+      const aPos = a.positionInGroup;
+      const bPos = b.positionInGroup;
+      if (typeof aPos === 'number' && typeof bPos === 'number') return aPos - bPos;
+      if (typeof aPos === 'number') return -1;
+      if (typeof bPos === 'number') return 1;
+      const aMs = a.createdAt?.toMillis?.() ?? 0;
+      const bMs = b.createdAt?.toMillis?.() ?? 0;
+      return aMs - bMs;
+    });
   },
 
   /** Gold: find all guests in a group */
